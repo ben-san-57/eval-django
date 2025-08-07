@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+
+{% block title %}Mes cocktails - Le Mixologue Augmenté{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto py-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-4xl font-bold text-gray-900">🍹 Mes créations</h1>
+            <p class="text-xl text-gray-600 mt-2">Retrouvez tous vos cocktails créés avec l'IA</p>
+        </div>
+        
+        <a href="{% url 'cocktails:generate' %}" class="bg-cocktail-primary hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Créer un nouveau cocktail
+        </a>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm">Total</p>
+                    <p class="text-3xl font-bold">{{ total_cocktails }}</p>
+                </div>
+                <svg class="w-8 h-8 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm">Favoris</p>
+                    <p class="text-3xl font-bold">{{ favorite_cocktails }}</p>
+                </div>
+                <svg class="w-8 h-8 text-green-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100 text-sm">Avec alcool</p>
+                    <p class="text-3xl font-bold">{{ cocktails_with_alcohol }}</p>
+                </div>
+                <svg class="w-8 h-8 text-purple-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-100 text-sm">Sans alcool</p>
+                    <p class="text-3xl font-bold">{{ cocktails_without_alcohol }}</p>
+                </div>
+                <svg class="w-8 h-8 text-yellow-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="flex flex-wrap items-center gap-4">
+            <span class="font-medium text-gray-700">Filtrer par :</span>
+            
+            <button class="filter-btn active bg-cocktail-primary text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors" data-filter="all">
+                Tous
+            </button>
+            
+            <button class="filter-btn bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors" data-filter="favorites">
+                Favoris
+            </button>
+            
+            <button class="filter-btn bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors" data-filter="alcoholic">
+                Avec alcool
+            </button>
+            
+            <button class="filter-btn bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors" data-filter="non-alcoholic">
+                Sans alcool
+            </button>
+            
+            <div class="ml-auto">
+                <select class="bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    <option>Trier par date (récent)</option>
+                    <option>Trier par date (ancien)</option>
+                    <option>Trier par nom (A-Z)</option>
+                    <option>Trier par nom (Z-A)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des cocktails -->
+    {% if cocktails %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for cocktail in cocktails %}
+        <div class="cocktail-card bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1" 
+             data-alcohol="{{ cocktail.alcohol_content }}" 
+             data-favorite="{{ cocktail.is_favorite|yesno:'true,false' }}">
+            
+            <!-- Image placeholder ou génération future -->
+            <div class="h-48 bg-gradient-to-br from-cocktail-primary/20 to-cocktail-secondary/20 rounded-t-lg flex items-center justify-center overflow-hidden">
+                {% if cocktail.image_url %}
+                    <img src="{{ MEDIA_URL }}{{ cocktail.image_url }}" 
+                         alt="{{ cocktail.name }}" 
+                         class="w-full h-full object-cover">
+                {% else %}
+                    <div class="text-6xl">🍹</div>
+                {% endif %}
+            </div>
+            
+            <div class="p-6">
+                <!-- Header de la carte -->
+                <div class="flex justify-between items-start mb-3">
+                    <h3 class="text-xl font-bold text-gray-900 line-clamp-2">{{ cocktail.name }}</h3>
+                    <button class="text-gray-400 hover:text-red-500 transition-colors">
+                        {% if cocktail.is_favorite %}
+                            <svg class="w-5 h-5 fill-current text-red-500" viewBox="0 0 24 24">
+                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                            </svg>
+                        {% else %}
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                            </svg>
+                        {% endif %}
+                    </button>
+                </div>
+                
+                <!-- Description -->
+                <p class="text-gray-600 text-sm mb-4 line-clamp-3">{{ cocktail.description }}</p>
+                
+                <!-- Caractéristiques -->
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <!-- Badge difficulté -->
+                    {% if cocktail.difficulty_level == 'easy' %}
+                        <span class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">Facile</span>
+                    {% elif cocktail.difficulty_level == 'medium' %}
+                        <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">Moyen</span>
+                    {% else %}
+                        <span class="bg-red-100 text-red-800 text-xs font-semibold px-2.5 py-0.5 rounded">Difficile</span>
+                    {% endif %}
+                    
+                    <!-- Badge alcool -->
+                    {% if cocktail.alcohol_content == 'none' %}
+                        <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">Sans alcool</span>
+                    {% elif cocktail.alcohol_content == 'low' %}
+                        <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">Léger</span>
+                    {% elif cocktail.alcohol_content == 'medium' %}
+                        <span class="bg-orange-100 text-orange-800 text-xs font-semibold px-2.5 py-0.5 rounded">Modéré</span>
+                    {% else %}
+                        <span class="bg-red-100 text-red-800 text-xs font-semibold px-2.5 py-0.5 rounded">Fort</span>
+                    {% endif %}
+                    
+                    <!-- Badge temps -->
+                    <span class="bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded">{{ cocktail.preparation_time }} min</span>
+                </div>
+                
+                <!-- Ingrédients aperçu -->
+                <div class="mb-4">
+                    <p class="text-xs text-gray-500 mb-1">Ingrédients principaux :</p>
+                    <p class="text-sm text-gray-700">
+                        {% for ingredient in cocktail.ingredients|slice:":3" %}
+                            {{ ingredient.nom }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                        {% if cocktail.ingredients|length > 3 %}...{% endif %}
+                    </p>
+                </div>
+                
+                <!-- Footer de la carte -->
+                <div class="flex justify-between items-center pt-4 border-t border-gray-100">
+                    <span class="text-xs text-gray-500">{{ cocktail.created_at|date:"d M Y" }}</span>
+                    <a href="{% url 'cocktails:cocktail_detail' pk=cocktail.pk %}" 
+                       class="bg-cocktail-primary hover:bg-purple-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors">
+                        Voir détails
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if cocktails.has_other_pages %}
+    <div class="mt-8 flex justify-center">
+        <nav class="flex items-center space-x-2">
+            {% if cocktails.has_previous %}
+                <a href="?page={{ cocktails.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.difficulty %}&difficulty={{ request.GET.difficulty }}{% endif %}" 
+                   class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700">
+                    Précédent
+                </a>
+            {% endif %}
+            
+            {% for num in cocktails.paginator.page_range %}
+                {% if cocktails.number == num %}
+                    <span class="px-3 py-2 text-sm font-medium text-white bg-cocktail-primary border border-cocktail-primary rounded-md">
+                        {{ num }}
+                    </span>
+                {% else %}
+                    <a href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.difficulty %}&difficulty={{ request.GET.difficulty }}{% endif %}" 
+                       class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700">
+                        {{ num }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if cocktails.has_next %}
+                <a href="?page={{ cocktails.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.difficulty %}&difficulty={{ request.GET.difficulty }}{% endif %}" 
+                   class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700">
+                    Suivant
+                </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- État vide -->
+    <div class="text-center py-16">
+        <div class="text-6xl mb-4">🍹</div>
+        <h3 class="text-2xl font-bold text-gray-900 mb-2">Aucun cocktail créé</h3>
+        <p class="text-gray-600 mb-8">Vous n'avez pas encore créé de cocktail. Commencez dès maintenant !</p>
+        <a href="{% url 'cocktails:generate' %}" class="bg-cocktail-primary hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 inline-flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Créer mon premier cocktail
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Système de filtres
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const cocktailCards = document.querySelectorAll('.cocktail-card');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Retirer la classe active de tous les boutons
+            filterButtons.forEach(btn => {
+                btn.classList.remove('active', 'bg-cocktail-primary', 'text-white');
+                btn.classList.add('bg-gray-100', 'text-gray-700');
+            });
+            
+            // Ajouter la classe active au bouton cliqué
+            this.classList.add('active', 'bg-cocktail-primary', 'text-white');
+            this.classList.remove('bg-gray-100', 'text-gray-700');
+            
+            const filter = this.dataset.filter;
+            
+            cocktailCards.forEach(card => {
+                let shouldShow = true;
+                
+                switch(filter) {
+                    case 'favorites':
+                        shouldShow = card.dataset.favorite === 'true';
+                        break;
+                    case 'alcoholic':
+                        shouldShow = card.dataset.alcohol !== 'none';
+                        break;
+                    case 'non-alcoholic':
+                        shouldShow = card.dataset.alcohol === 'none';
+                        break;
+                    case 'all':
+                    default:
+                        shouldShow = true;
+                        break;
+                }
+                
+                if (shouldShow) {
+                    card.style.display = 'block';
+                    card.style.animation = 'fadeIn 0.3s ease-in';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+    
+    // Animation d'apparition des cartes
+    cocktailCards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+
+// Animation CSS pour le fadeIn
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}
+
+{% endblock %}

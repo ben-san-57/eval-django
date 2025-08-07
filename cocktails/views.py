@@ -1,0 +1,175 @@
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import HttpResponse, JsonResponse
+from django.core.paginator import Paginator
+from .forms import CustomUserCreationForm, CustomAuthenticationForm, CocktailGenerationForm
+from .models import CocktailRecipe, GenerationRequest
+from .services.ai_factory import ai_service
+import json
+import logging
+
+logger = logging.getLogger(__name__)
+
+def home(request):
+    """Page d'accueil"""
+    return render(request, 'home.html')
+
+def test_tailwind(request):
+    """Page de test Tailwind"""
+    return render(request, 'test_tailwind.html')
+
+@login_required
+def generate_cocktail_view(request):
+    """Vue pour générer un nouveau cocktail"""
+    if request.method == 'POST':
+        form = CocktailGenerationForm(request.POST)
+        if form.is_valid():
+            try:
+                user_prompt = form.cleaned_data['user_prompt']
+                context = form.cleaned_data.get('context', '')
+                
+                # Créer la demande de génération
+                generation_request = GenerationRequest.objects.create(
+                    user=request.user,
+                    user_prompt=user_prompt,
+                    context=context
+                )
+                
+                # Générer le cocktail avec l'IA
+                cocktail_data = ai_service.generate_cocktail(user_prompt, context)
+                
+                # Créer le cocktail en base
+                cocktail = CocktailRecipe.objects.create(
+                    user=request.user,
+                    generation_request=generation_request,
+                    name=cocktail_data['name'],
+                    description=cocktail_data['description'],
+                    ingredients=cocktail_data['ingredients'],
+                    music_ambiance=cocktail_data.get('music_ambiance', ''),
+                    image_prompt=cocktail_data.get('image_prompt', ''),
+                    image_url=cocktail_data.get('image_url', ''),
+                    difficulty_level=cocktail_data.get('difficulty_level', 'medium'),
+                    alcohol_content=cocktail_data.get('alcohol_content', 'medium'),
+                    preparation_time=cocktail_data.get('preparation_time', 5)
+                )
+                
+                messages.success(request, f'Cocktail "{cocktail.name}" créé avec succès!')
+                return redirect('cocktails:cocktail_detail', pk=cocktail.pk)
+                
+            except Exception as e:
+                logger.error(f"Erreur lors de la génération de cocktail: {e}")
+                messages.error(request, "Erreur lors de la génération du cocktail. Veuillez réessayer.")
+    else:
+        form = CocktailGenerationForm()
+    
+    return render(request, 'cocktails/generate.html', {'form': form})
+
+def register_view(request):
+    """Vue d'inscription"""
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            username = form.cleaned_data.get('username')
+            messages.success(request, f'Compte créé pour {username}! Vous pouvez maintenant vous connecter.')
+            return redirect('cocktails:login')
+    else:
+        form = CustomUserCreationForm()
+    return render(request, 'auth/register.html', {'form': form})
+
+def login_view(request):
+    """Vue de connexion"""
+    if request.method == 'POST':
+        form = CustomAuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.info(request, f'Vous êtes maintenant connecté en tant que {username}.')
+                return redirect('cocktails:home')
+            else:
+                messages.error(request, 'Nom d\'utilisateur ou mot de passe invalide.')
+        else:
+            messages.error(request, 'Nom d\'utilisateur ou mot de passe invalide.')
+    else:
+        form = CustomAuthenticationForm()
+    return render(request, 'auth/login.html', {'form': form})
+
+def logout_view(request):
+    """Vue de déconnexion"""
+    logout(request)
+    messages.info(request, 'Vous avez été déconnecté avec succès.')
+    return redirect('cocktails:home')
+
+@login_required
+def profile_view(request):
+    """Vue du profil utilisateur"""
+    # Calculer les statistiques
+    total_cocktails = CocktailRecipe.objects.filter(user=request.user).count()
+    favorite_cocktails = CocktailRecipe.objects.filter(user=request.user, is_favorite=True).count()
+    
+    context = {
+        'total_cocktails': total_cocktails,
+        'favorite_cocktails': favorite_cocktails,
+    }
+    return render(request, 'auth/profile.html', context)
+
+@login_required
+def cocktail_detail_view(request, pk):
+    """Vue de détail d'un cocktail"""
+    try:
+        cocktail = CocktailRecipe.objects.get(pk=pk, user=request.user)
+        return render(request, 'cocktails/detail.html', {'cocktail': cocktail})
+    except CocktailRecipe.DoesNotExist:
+        messages.error(request, "Cocktail non trouvé.")
+        return redirect('cocktails:history')
+
+@login_required
+def cocktail_history_view(request):
+    """Vue de l'historique des cocktails avec pagination"""
+    cocktails_list = CocktailRecipe.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Statistiques totales
+    total_cocktails = cocktails_list.count()
+    cocktails_with_alcohol = cocktails_list.exclude(alcohol_content='none').count()
+    cocktails_without_alcohol = cocktails_list.filter(alcohol_content='none').count()
+    favorite_cocktails = cocktails_list.filter(is_favorite=True).count()
+    
+    # Pagination - 6 cocktails par page
+    paginator = Paginator(cocktails_list, 6)
+    page_number = request.GET.get('page')
+    cocktails = paginator.get_page(page_number)
+    
+    context = {
+        'cocktails': cocktails,
+        'total_cocktails': total_cocktails,
+        'cocktails_with_alcohol': cocktails_with_alcohol,
+        'cocktails_without_alcohol': cocktails_without_alcohol,
+        'favorite_cocktails': favorite_cocktails,
+    }
+    
+    return render(request, 'cocktails/history.html', context)
+
+@login_required 
+def toggle_favorite(request, pk):
+    """Basculer le statut favori d'un cocktail"""
+    try:
+        cocktail = CocktailRecipe.objects.get(pk=pk, user=request.user)
+        cocktail.is_favorite = not cocktail.is_favorite
+        cocktail.save()
+        
+        if cocktail.is_favorite:
+            messages.success(request, f'"{cocktail.name}" ajouté aux favoris!')
+        else:
+            messages.info(request, f'"{cocktail.name}" retiré des favoris.')
+            
+        return JsonResponse({
+            'success': True, 
+            'is_favorite': cocktail.is_favorite
+        })
+    except CocktailRecipe.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Cocktail non trouvé'}, status=404)

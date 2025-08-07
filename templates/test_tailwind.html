@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Test Tailwind - Le Mixologue Augmenté{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4">
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">🍸 Bienvenue sur Le Mixologue Augmenté</h1>
+        <p class="text-xl text-gray-600">Votre assistant IA pour créer des cocktails uniques</p>
+    </div>
+
+    <!-- Test des classes Tailwind -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <div class="text-2xl mb-4">🍹</div>
+            <h3 class="text-lg font-semibold mb-2">Cocktails Personnalisés</h3>
+            <p class="text-gray-600">Créez des cocktails uniques selon vos goûts</p>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <div class="text-2xl mb-4">🤖</div>
+            <h3 class="text-lg font-semibold mb-2">Intelligence Artificielle</h3>
+            <p class="text-gray-600">Powered by AI pour des recettes innovantes</p>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <div class="text-2xl mb-4">📱</div>
+            <h3 class="text-lg font-semibold mb-2">Interface Mobile</h3>
+            <p class="text-gray-600">Optimisé pour tablettes et mobiles</p>
+        </div>
+    </div>
+
+    <!-- Bouton de test -->
+    <div class="text-center">
+        <button class="bg-cocktail-primary hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all">
+            Créer un cocktail
+        </button>
+    </div>
+
+    <!-- Zone de test des couleurs -->
+    <div class="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-cocktail-primary h-20 rounded-lg flex items-center justify-center text-white font-semibold">
+            Primary
+        </div>
+        <div class="bg-cocktail-secondary h-20 rounded-lg flex items-center justify-center text-white font-semibold">
+            Secondary
+        </div>
+        <div class="bg-blue-500 h-20 rounded-lg flex items-center justify-center text-white font-semibold">
+            Blue
+        </div>
+        <div class="bg-green-500 h-20 rounded-lg flex items-center justify-center text-white font-semibold">
+            Green
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}Le Mixologue Augmenté - Créateur de cocktails IA{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="bg-gradient-to-br from-cocktail-primary via-purple-600 to-cocktail-secondary text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div class="text-center">
+            <h1 class="text-5xl md:text-7xl font-bold mb-6">
+                🍹 Le Mixologue<br>
+                <span class="text-cocktail-secondary">Augmenté</span>
+            </h1>
+            <p class="text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90">
+                Découvrez l'art du cocktail réinventé par l'intelligence artificielle. 
+                Décrivez vos envies, nous créons le cocktail parfait pour vous.
+            </p>
+            
+            {% if user.is_authenticated %}
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="{% url 'cocktails:generate' %}" class="bg-white text-cocktail-primary hover:bg-gray-100 font-bold py-4 px-8 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200 inline-flex items-center justify-center">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        Créer un cocktail
+                    </a>
+                    <a href="{% url 'cocktails:history' %}" class="bg-transparent border-2 border-white text-white hover:bg-white hover:text-cocktail-primary font-bold py-4 px-8 rounded-xl transition-all duration-200 inline-flex items-center justify-center">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        Mes créations
+                    </a>
+                </div>
+            {% else %}
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="{% url 'cocktails:register' %}" class="bg-white text-cocktail-primary hover:bg-gray-100 font-bold py-4 px-8 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200 inline-flex items-center justify-center">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                        </svg>
+                        Commencer gratuitement
+                    </a>
+                    <a href="{% url 'cocktails:login' %}" class="bg-transparent border-2 border-white text-white hover:bg-white hover:text-cocktail-primary font-bold py-4 px-8 rounded-xl transition-all duration-200 inline-flex items-center justify-center">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                        </svg>
+                        Se connecter
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold text-gray-900 mb-4">Pourquoi choisir Le Mixologue Augmenté ?</h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">Une expérience unique qui combine créativité humaine et intelligence artificielle pour des cocktails extraordinaires.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Feature 1 -->
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-8 text-center hover:shadow-lg transition-shadow">
+                <div class="bg-blue-500 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">IA Creative</h3>
+                <p class="text-gray-600">Notre intelligence artificielle analyse vos goûts et crée des recettes personnalisées et originales.</p>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-8 text-center hover:shadow-lg transition-shadow">
+                <div class="bg-purple-500 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">Personnalisé</h3>
+                <p class="text-gray-600">Chaque cocktail est unique et adapté à vos préférences, votre humeur et l'occasion.</p>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-8 text-center hover:shadow-lg transition-shadow">
+                <div class="bg-green-500 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">Historique</h3>
+                <p class="text-gray-600">Sauvegardez vos créations favorites et retrouvez facilement vos recettes préférées.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How it works -->
+<div class="py-24 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold text-gray-900 mb-4">Comment ça marche ?</h2>
+            <p class="text-xl text-gray-600">En 3 étapes simples, créez votre cocktail parfait</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Step 1 -->
+            <div class="text-center">
+                <div class="bg-cocktail-primary text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">1</div>
+                <h3 class="text-xl font-bold text-gray-900 mb-4">Décrivez vos envies</h3>
+                <p class="text-gray-600">"Je veux quelque chose de fruité pour une soirée d'été" ou "Un cocktail sans alcool pour un brunch"</p>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="text-center">
+                <div class="bg-cocktail-primary text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">2</div>
+                <h3 class="text-xl font-bold text-gray-900 mb-4">L'IA crée votre recette</h3>
+                <p class="text-gray-600">Notre intelligence artificielle analyse votre demande et génère une recette personnalisée avec ingrédients et préparation</p>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="text-center">
+                <div class="bg-cocktail-primary text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">3</div>
+                <h3 class="text-xl font-bold text-gray-900 mb-4">Préparez et dégustez</h3>
+                <p class="text-gray-600">Suivez les instructions et savourez votre création unique. Sauvegardez vos favoris pour plus tard !</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Examples Section -->
+<div class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold text-gray-900 mb-4">Exemples de créations</h2>
+            <p class="text-xl text-gray-600">Découvrez quelques cocktails créés par notre IA</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Example 1 -->
+            <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-100">
+                <div class="text-4xl mb-4 text-center">🌅</div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Soleil Tropical</h3>
+                <p class="text-gray-600 text-sm mb-4">Un mélange fruité et rafraîchissant perfect pour les chaudes journées d'été.</p>
+                <div class="text-xs text-gray-500">
+                    <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded">Sans alcool</span>
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded ml-1">Facile</span>
+                </div>
+            </div>
+
+            <!-- Example 2 -->
+            <div class="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6 border border-purple-100">
+                <div class="text-4xl mb-4 text-center">🌙</div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Mystique Nocturne</h3>
+                <p class="text-gray-600 text-sm mb-4">Une création sophistiquée aux notes complexes pour vos soirées élégantes.</p>
+                <div class="text-xs text-gray-500">
+                    <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded">Modéré</span>
+                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded ml-1">Moyen</span>
+                </div>
+            </div>
+
+            <!-- Example 3 -->
+            <div class="bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl p-6 border border-green-100">
+                <div class="text-4xl mb-4 text-center">🌿</div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Jardin Secret</h3>
+                <p class="text-gray-600 text-sm mb-4">Frais et herbacé, ce cocktail révèle des notes botaniques subtiles.</p>
+                <div class="text-xs text-gray-500">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded">Léger</span>
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded ml-1">Facile</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CTA Section -->
+{% if not user.is_authenticated %}
+<div class="py-24 bg-gradient-to-r from-cocktail-primary to-purple-600 text-white">
+    <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+        <h2 class="text-4xl font-bold mb-6">Prêt à créer votre premier cocktail ?</h2>
+        <p class="text-xl mb-8 opacity-90">Rejoignez la communauté des mixologues augmentés et découvrez des saveurs inédites.</p>
+        <a href="{% url 'cocktails:register' %}" class="bg-white text-cocktail-primary hover:bg-gray-100 font-bold py-4 px-8 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200 inline-flex items-center">
+            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Créer mon compte gratuitement
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{% block extra_scripts %}
+<script>
+// Animation au scroll
+document.addEventListener('DOMContentLoaded', function() {
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+
+    // Animer les éléments
+    document.querySelectorAll('.grid > div').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(30px)';
+        el.style.transition = 'all 0.6s ease';
+        observer.observe(el);
+    });
+});
+</script>
+{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Profil - Le Mixologue Augmenté{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-6">
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-cocktail-primary to-cocktail-secondary px-6 py-8">
+            <div class="flex items-center">
+                <div class="h-16 w-16 bg-white rounded-full flex items-center justify-center">
+                    <span class="text-2xl">👤</span>
+                </div>
+                <div class="ml-6">
+                    <h1 class="text-2xl font-bold text-white">{{ user.get_full_name|default:user.username }}</h1>
+                    <p class="text-purple-100">Mixologue en herbe</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="px-6 py-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Informations personnelles</h3>
+                    <dl class="space-y-4">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Nom d'utilisateur</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ user.username }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Email</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ user.email }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Nom complet</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ user.get_full_name|default:"Non renseigné" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Membre depuis</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ user.date_joined|date:"j F Y" }}</dd>
+                        </div>
+                    </dl>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Statistiques</h3>
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="text-2xl mr-3">🍹</div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Cocktails créés</p>
+                                    <p class="text-2xl font-bold text-cocktail-primary">{{ total_cocktails }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="text-2xl mr-3">⭐</div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Favoris</p>
+                                    <p class="text-2xl font-bold text-cocktail-secondary">{{ favorite_cocktails }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-gray-200">
+                <div class="flex justify-between">
+                    <button class="bg-cocktail-primary hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition-colors">
+                        Modifier le profil
+                    </button>
+                    <a href="{% url 'cocktails:logout' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition-colors">
+                        Se déconnecter
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
