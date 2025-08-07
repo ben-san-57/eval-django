@@ -74,6 +74,39 @@
                             <p class="mt-2 text-sm text-gray-500">{{ form.ai_model.help_text }}</p>
                         {% endif %}
                     </div>
+                    
+                    <!-- Option génération d'image -->
+                    <div class="border-t border-gray-200 pt-6">
+                        <div class="flex items-start space-x-3">
+                            <div class="flex items-center h-5">
+                                {{ form.generate_image }}
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <label for="{{ form.generate_image.id_for_label }}" class="text-sm font-medium text-gray-700 cursor-pointer">
+                                    {{ form.generate_image.label }}
+                                </label>
+                                {% if form.generate_image.help_text %}
+                                    <p class="text-xs text-gray-500 mt-1">{{ form.generate_image.help_text }}</p>
+                                {% endif %}
+                                <div class="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                    <div class="flex items-center space-x-2">
+                                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span class="text-xs text-blue-700 font-medium">Mode économique activé</span>
+                                    </div>
+                                    <p class="text-xs text-blue-600 mt-1">
+                                        Coût : ~0.009$ par image (27 images avec 25 crédits gratuits)
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% if form.generate_image.errors %}
+                            <div class="mt-2 text-sm text-red-600">
+                                {{ form.generate_image.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <div class="bg-gray-50 rounded-lg p-4">

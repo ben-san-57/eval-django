@@ -153,6 +153,13 @@ MISTRAL_API_KEY = os.getenv('MISTRAL_API_KEY', '')
 MISTRAL_MODEL = os.getenv('MISTRAL_MODEL', 'mistral-large-latest')
 MISTRAL_BASE_URL = os.getenv('MISTRAL_BASE_URL', 'https://api.mistral.ai/v1')
 
+# Configuration Stability AI pour génération d'images
+STABILITY_AI_API_KEY = os.getenv('STABILITY_AI_API_KEY', '')
+STABILITY_AI_MODEL = os.getenv('STABILITY_AI_MODEL', 'sdxl-1-0')  # Le plus économique
+STABILITY_AI_BASE_URL = os.getenv('STABILITY_AI_BASE_URL', 'https://api.stability.ai')
+STABILITY_AI_ENABLED = os.getenv('STABILITY_AI_ENABLED', 'False').lower() == 'true'
+STABILITY_AI_COST_MODE = os.getenv('STABILITY_AI_COST_MODE', 'economic')  # economic, balanced, quality
+
 # Modèles disponibles pour l'utilisateur
 AVAILABLE_AI_MODELS = {
     'ollama': {

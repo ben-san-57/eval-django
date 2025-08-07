@@ -72,6 +72,16 @@ class CocktailGenerationForm(forms.Form):
         help_text="Choisissez le modèle IA pour générer votre cocktail"
     )
     
+    generate_image = forms.BooleanField(
+        label="Générer une image du cocktail",
+        widget=forms.CheckboxInput(attrs={
+            'class': 'w-4 h-4 text-cocktail-primary bg-gray-100 border-gray-300 rounded focus:ring-cocktail-primary focus:ring-2'
+        }),
+        help_text="Utiliser Stability AI pour créer une image du cocktail (consomme des crédits)",
+        required=False,
+        initial=False
+    )
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Construire les choix dynamiquement selon la configuration

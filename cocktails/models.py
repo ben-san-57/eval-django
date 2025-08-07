@@ -26,6 +26,10 @@ class GenerationRequest(models.Model):
         default='ollama',
         help_text="Modèle IA choisi par l'utilisateur"
     )
+    generate_image = models.BooleanField(
+        default=False,
+        help_text="Générer une image pour le cocktail avec Stability AI"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:

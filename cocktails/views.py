@@ -30,13 +30,15 @@ def generate_cocktail_view(request):
                 user_prompt = form.cleaned_data['user_prompt']
                 context = form.cleaned_data.get('context', '')
                 ai_model = form.cleaned_data.get('ai_model', 'ollama')
+                generate_image = form.cleaned_data.get('generate_image', False)
                 
                 # Créer la demande de génération avec le modèle choisi
                 generation_request = GenerationRequest.objects.create(
                     user=request.user,
                     user_prompt=user_prompt,
                     context=context,
-                    ai_model=ai_model
+                    ai_model=ai_model,
+                    generate_image=generate_image
                 )
                 
                 # Obtenir le service IA selon le choix de l'utilisateur
@@ -44,6 +46,21 @@ def generate_cocktail_view(request):
                 
                 # Générer le cocktail avec l'IA
                 cocktail_data = ai_service.generate_cocktail_recipe(user_prompt, context)
+                
+                # Générer l'image si demandé
+                image_url = ''
+                if generate_image:
+                    try:
+                        # Utiliser le service Stability AI pour générer l'image
+                        from .services.ollama_service import OllamaService
+                        ollama_service = OllamaService()
+                        image_url = ollama_service.generate_cocktail_image(
+                            cocktail_data.get('image_prompt', cocktail_data['name'])
+                        )
+                        logger.info(f"Image générée avec succès pour le cocktail {cocktail_data['name']}")
+                    except Exception as e:
+                        logger.error(f"Erreur lors de la génération d'image: {e}")
+                        # Continue sans image en cas d'erreur
                 
                 # Créer le cocktail en base
                 cocktail = CocktailRecipe.objects.create(
@@ -54,7 +71,7 @@ def generate_cocktail_view(request):
                     ingredients=cocktail_data['ingredients'],
                     music_ambiance=cocktail_data.get('music_ambiance', ''),
                     image_prompt=cocktail_data.get('image_prompt', ''),
-                    image_url=cocktail_data.get('image_url', ''),
+                    image_url=image_url or cocktail_data.get('image_url', ''),
                     difficulty_level=cocktail_data.get('difficulty_level', 'medium'),
                     alcohol_content=cocktail_data.get('alcohol_content', 'medium'),
                     preparation_time=cocktail_data.get('preparation_time', 5)

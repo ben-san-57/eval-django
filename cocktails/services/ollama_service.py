@@ -1,6 +1,6 @@
 """
 Service IA unifié utilisant LangGraph pour la génération de cocktails
-Support d'Ollama (Llama 3.1) et Mistral AI
+Support d'Ollama (Llama 3.1) et Mistral AI avec génération d'images Stability AI
 """
 
 import logging
@@ -20,6 +20,264 @@ from cocktails.services.base_ai_service import BaseAIService
 from cocktails.models import CocktailRecipe
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# SERVICE STABILITY AI INTÉGRÉ
+# ============================================================================
+
+class StabilityAIService:
+    """Service intégré pour la génération d'images avec Stability AI"""
+    
+    def __init__(self):
+        self.api_key = getattr(settings, 'STABILITY_AI_API_KEY', '')
+        self.model = getattr(settings, 'STABILITY_AI_MODEL', 'sdxl-1-0')
+        self.base_url = getattr(settings, 'STABILITY_AI_BASE_URL', 'https://api.stability.ai')
+        self.enabled = getattr(settings, 'STABILITY_AI_ENABLED', False)
+        self.cost_mode = getattr(settings, 'STABILITY_AI_COST_MODE', 'economic')
+        
+        # Configuration des modèles par coût
+        self.model_costs = {
+            # Modèles économiques (moins de 1 crédit)
+            'sdxl-1-0': 0.9,
+            
+            # Modèles équilibrés (2-4 crédits)
+            'stable-diffusion-3-5-flash': 2.5,
+            'stable-image-core': 3,
+            'stable-diffusion-3-5-medium': 3.5,
+            'stable-diffusion-3-5-large-turbo': 4,
+            
+            # Modèles haute qualité (6-8 crédits)
+            'stable-diffusion-3-5-large': 6.5,
+            'stable-image-ultra': 8
+        }
+        
+        # Sélection automatique du modèle selon le mode coût
+        if self.cost_mode == 'economic':
+            self.model = 'sdxl-1-0'  # 0.9 crédits - Le moins cher
+        elif self.cost_mode == 'balanced':
+            self.model = 'stable-diffusion-3-5-flash'  # 2.5 crédits
+        elif self.cost_mode == 'quality':
+            self.model = 'stable-diffusion-3-5-large-turbo'  # 4 crédits
+        
+        if self.enabled:
+            cost = self.model_costs.get(self.model, 'Inconnu')
+            logger.info(f"🎨 Stability AI configuré - Modèle: {self.model} ({cost} crédits/image)")
+    
+    def is_enabled(self) -> bool:
+        """Vérifie si la génération d'images est activée"""
+        return self.enabled and bool(self.api_key) and self.api_key != 'your_stability_api_key_here'
+    
+    def generate_image(self, prompt: str, cocktail_name: str = "") -> Optional[str]:
+        """Génère une image de cocktail via Stability AI avec optimisation des coûts"""
+        if not self.is_enabled():
+            logger.info("🖼️ Génération d'images désactivée - Image placeholder utilisée")
+            return self._generate_placeholder_image()
+        
+        try:
+            cost = self.model_costs.get(self.model, 'Inconnu')
+            logger.info(f"🎨 Génération d'image Stability AI - Modèle: {self.model} ({cost} crédits)")
+            
+            # Adapter le prompt pour les cocktails (simplifié pour réduire les coûts)
+            if self.cost_mode == 'economic':
+                enhanced_prompt = f"{cocktail_name} cocktail, simple glass, clean background"
+            elif self.cost_mode == 'balanced':
+                enhanced_prompt = f"{cocktail_name} cocktail, {prompt}, elegant glass, simple setup"
+            else:  # quality
+                enhanced_prompt = f"Professional photograph of {cocktail_name} cocktail, {prompt}, elegant glassware, garnish, bar setting, high quality"
+            
+            # Préparer la requête API avec paramètres économiques
+            headers = {
+                'Authorization': f'Bearer {self.api_key}',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+            
+            # URL de l'endpoint selon le modèle
+            if self.model == 'sdxl-1-0':
+                endpoint = f"{self.base_url}/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image"
+                # Paramètres spécifiques SDXL - dimensions minimums requises
+                if self.cost_mode == 'economic':
+                    # Utiliser la plus petite dimension autorisée pour économiser
+                    width, height = 1024, 1024  # Carré minimum
+                else:
+                    width, height = 1024, 1024  # Standard
+                
+                # Données pour SDXL API
+                data = {
+                    'text_prompts': [{'text': enhanced_prompt}],
+                    'width': width,
+                    'height': height,
+                    'samples': 1,  # Une seule image
+                    'steps': 20,   # Minimum d'étapes
+                }
+            else:
+                # Pour les nouveaux modèles SD3.5
+                endpoint = f"{self.base_url}/v2beta/stable-image/generate/sd3"
+                # Paramètres optimisés pour réduire les coûts
+                data = {
+                    'prompt': enhanced_prompt,
+                    'output_format': 'jpeg',
+                    'aspect_ratio': '1:1',  # Format carré standard
+                }
+                
+                # Paramètres spécifiques selon le mode économique
+                if self.cost_mode == 'economic':
+                    data.update({
+                        'style_preset': 'photographic',  # Style simple
+                        'steps': 20,  # Moins d'étapes = plus rapide et moins cher
+                        'cfg_scale': 7,  # Configuration standard
+                    })
+            
+            # Faire la requête
+            response = requests.post(endpoint, headers=headers, json=data, timeout=60)
+            
+            if response.status_code == 200:
+                # Traiter la réponse selon le modèle
+                if self.model == 'sdxl-1-0':
+                    # SDXL retourne du JSON avec base64
+                    response_data = response.json()
+                    if 'artifacts' in response_data and response_data['artifacts']:
+                        import base64
+                        image_data = base64.b64decode(response_data['artifacts'][0]['base64'])
+                        image_path = self._save_generated_image(image_data, cocktail_name)
+                    else:
+                        raise Exception("Pas d'image dans la réponse SDXL")
+                else:
+                    # Nouveaux modèles retournent du binaire direct
+                    image_path = self._save_generated_image(response.content, cocktail_name)
+                
+                logger.info(f"✅ Image générée ({cost} crédits utilisés): {image_path}")
+                return image_path
+                
+            elif response.status_code == 402:
+                logger.warning("💳 Crédits Stability AI épuisés - Utilisation d'image placeholder")
+                return self._generate_placeholder_image()
+            elif response.status_code == 401:
+                logger.error("🔑 Clé API Stability AI invalide")
+                return self._generate_placeholder_image()
+            else:
+                logger.error(f"❌ Erreur API Stability AI: {response.status_code} - {response.text}")
+                return self._generate_placeholder_image()
+                
+        except Exception as e:
+            logger.error(f"❌ Erreur génération Stability AI: {e}")
+            return self._generate_placeholder_image()
+    
+    def _save_generated_image(self, image_data: bytes, cocktail_name: str) -> str:
+        """Sauvegarde l'image générée dans le dossier media"""
+        import os
+        from django.conf import settings
+        from pathlib import Path
+        import hashlib
+        
+        try:
+            # Créer un nom de fichier unique
+            name_hash = hashlib.md5(cocktail_name.encode()).hexdigest()[:8]
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"cocktail_{name_hash}_{timestamp}.jpg"
+            
+            # Chemin du dossier media/cocktail_images
+            media_root = Path(settings.MEDIA_ROOT)
+            cocktail_dir = media_root / 'cocktail_images'
+            cocktail_dir.mkdir(exist_ok=True)
+            
+            # Chemin complet du fichier
+            file_path = cocktail_dir / filename
+            
+            # Sauvegarder l'image
+            with open(file_path, 'wb') as f:
+                f.write(image_data)
+            
+            # Retourner le chemin relatif pour la DB
+            return f"cocktail_images/{filename}"
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur sauvegarde image: {e}")
+            return self._generate_placeholder_image()
+    
+    def _generate_placeholder_image(self) -> str:
+        """Génère une image placeholder"""
+        placeholder_images = [
+            "placeholder_2ed8a5ba.jpg",
+            "placeholder_3d0a5333.jpg", 
+            "placeholder_401ddb34.jpg",
+            "placeholder_5c46358c.jpg",
+            "placeholder_9f138c66.jpg",
+            "placeholder_ba0d131b.jpg"
+        ]
+        return f"cocktail_images/{random.choice(placeholder_images)}"
+    
+    def get_status(self) -> Dict[str, Any]:
+        """Retourne le statut du service de génération d'images"""
+        cost_per_image = self.model_costs.get(self.model, 'Inconnu')
+        return {
+            'enabled': self.enabled,
+            'api_key_configured': bool(self.api_key) and self.api_key != 'your_stability_api_key_here',
+            'model': self.model,
+            'cost_mode': self.cost_mode,
+            'cost_per_image': f"{cost_per_image} crédits" if isinstance(cost_per_image, (int, float)) else cost_per_image,
+            'cost_in_usd': f"${cost_per_image * 0.01:.3f}" if isinstance(cost_per_image, (int, float)) else "Inconnu",
+            'ready': self.is_enabled(),
+            'optimization': 'Résolution réduite, moins d\'étapes' if self.cost_mode == 'economic' else 'Standard'
+        }
+    
+    def enable_image_generation(self):
+        """Active la génération d'images"""
+        self.enabled = True
+        logger.info("✅ Génération d'images Stability AI activée")
+    
+    def disable_image_generation(self):
+        """Désactive la génération d'images"""
+        self.enabled = False
+        logger.info("❌ Génération d'images Stability AI désactivée")
+    
+    def set_cost_mode(self, mode: str):
+        """Change le mode de coût (economic, balanced, quality)"""
+        if mode in ['economic', 'balanced', 'quality']:
+            old_model = self.model
+            old_cost = self.model_costs.get(old_model, 'Inconnu')
+            
+            self.cost_mode = mode
+            if mode == 'economic':
+                self.model = 'sdxl-1-0'  # 0.9 crédits
+            elif mode == 'balanced':
+                self.model = 'stable-diffusion-3-5-flash'  # 2.5 crédits
+            elif mode == 'quality':
+                self.model = 'stable-diffusion-3-5-large-turbo'  # 4 crédits
+            
+            new_cost = self.model_costs.get(self.model, 'Inconnu')
+            logger.info(f"💰 Mode coût changé: {mode} - {old_model} ({old_cost}) → {self.model} ({new_cost} crédits)")
+        else:
+            logger.warning(f"❌ Mode coût invalide: {mode}. Utiliser: economic, balanced, quality")
+    
+    def get_available_modes(self) -> Dict[str, Dict]:
+        """Retourne les modes disponibles avec leurs coûts"""
+        return {
+            'economic': {
+                'model': 'sdxl-1-0',
+                'cost': 0.9,
+                'cost_usd': '$0.009',
+                'description': 'Le moins cher, qualité correcte, résolution 512x512'
+            },
+            'balanced': {
+                'model': 'stable-diffusion-3-5-flash',
+                'cost': 2.5,
+                'cost_usd': '$0.025',
+                'description': 'Bon rapport qualité/prix, génération rapide'
+            },
+            'quality': {
+                'model': 'stable-diffusion-3-5-large-turbo',
+                'cost': 4.0,
+                'cost_usd': '$0.040',
+                'description': 'Haute qualité, détails fins, plus cher'
+            }
+        }
+
+
+# ============================================================================
+# SERVICES LLM ET WORKFLOW
+# ============================================================================
 
 
 # LLM personnalisé pour Mistral compatible avec LangChain
@@ -252,6 +510,9 @@ class UnifiedCocktailService(BaseAIService):
             else:
                 self._init_ollama()
             
+            # Initialiser le service de génération d'images intégré
+            self._init_stability_ai()
+            
             self._build_cocktail_workflow()
             
         except Exception as e:
@@ -294,6 +555,14 @@ class UnifiedCocktailService(BaseAIService):
         except Exception as e:
             logger.error(f"❌ Impossible de se connecter à Mistral: {e}")
             raise
+    
+    def _init_stability_ai(self):
+        """Initialise le service Stability AI intégré"""
+        self.stability_service = StabilityAIService()
+        if self.stability_service.is_enabled():
+            logger.info("🎨 Service génération d'images Stability AI activé")
+        else:
+            logger.info("🖼️ Génération d'images désactivée - Placeholders utilisés")
     
     def test_connection(self) -> bool:
         """Test de connexion pour compatibilité avec les tests"""
@@ -372,7 +641,14 @@ class UnifiedCocktailService(BaseAIService):
         # Récupérer le résultat final
         cocktail_data = final_state["final_cocktail"]
         cocktail_data['image_prompt'] = final_state["image_prompt"]
-        cocktail_data['image_url'] = self._generate_placeholder_image()
+        
+        # Générer l'image avec Stability AI ou placeholder
+        image_url = self.stability_service.generate_image(
+            final_state["image_prompt"], 
+            cocktail_data['name']
+        )
+        cocktail_data['image_url'] = image_url
+        
         cocktail_data['ai_service'] = self.ai_service_type
         cocktail_data['ai_model_used'] = f"{self.ai_service_type}-workflow"
         
@@ -422,8 +698,15 @@ IMPORTANT:
             # Parser le JSON
             cocktail_data = self._parse_mistral_response(response)
             
+            # Générer un prompt d'image basique
+            image_prompt = f"Beautiful {cocktail_data['name']} cocktail in elegant glass"
+            
+            # Générer l'image avec Stability AI ou placeholder
+            image_url = self.stability_service.generate_image(image_prompt, cocktail_data['name'])
+            
             # Ajouter les métadonnées
-            cocktail_data['image_url'] = self._generate_placeholder_image()
+            cocktail_data['image_prompt'] = image_prompt
+            cocktail_data['image_url'] = image_url
             cocktail_data['ai_service'] = 'mistral'
             cocktail_data['ai_model_used'] = 'mistral-direct'
             cocktail_data['created_at'] = datetime.now().isoformat()
@@ -818,22 +1101,13 @@ IMPORTANT:
         except Exception:
             return f"Beautiful {cocktail_name} cocktail in a glass, professional photography, colorful, appetizing"
     
-    def generate_image(self, image_prompt: str) -> Optional[str]:
-        """Génère une image placeholder (Ollama ne fait pas d'images)"""
-        logger.info(f"🖼️ Génération d'image placeholder pour: {image_prompt[:50]}...")
-        return self._generate_placeholder_image()
+    def generate_image(self, image_prompt: str, cocktail_name: str = "") -> Optional[str]:
+        """Génère une image via Stability AI ou placeholder"""
+        return self.stability_service.generate_image(image_prompt, cocktail_name)
     
     def _generate_placeholder_image(self) -> str:
-        """Génère une image placeholder puisque Ollama ne fait pas d'images"""
-        placeholder_images = [
-            "placeholder_2ed8a5ba.jpg",
-            "placeholder_3d0a5333.jpg", 
-            "placeholder_401ddb34.jpg",
-            "placeholder_5c46358c.jpg",
-            "placeholder_9f138c66.jpg",
-            "placeholder_ba0d131b.jpg"
-        ]
-        return f"cocktail_images/{random.choice(placeholder_images)}"
+        """Génère une image placeholder"""
+        return self.stability_service._generate_placeholder_image()
     
     def create_cocktail_recipe(self, cocktail_data: Dict[str, Any], user, generation_request) -> CocktailRecipe:
         """Crée une instance CocktailRecipe Django à partir des données IA"""
@@ -878,6 +1152,47 @@ IMPORTANT:
         except Exception as e:
             logger.error(f"❌ Erreur création DB: {e}")
             raise
+    
+    # ============================================================================
+    # CONTRÔLE DE LA GÉNÉRATION D'IMAGES
+    # ============================================================================
+    
+    def is_image_generation_enabled(self) -> bool:
+        """Vérifie si la génération d'images est activée"""
+        return self.stability_service.is_enabled()
+    
+    def enable_image_generation(self):
+        """Active la génération d'images"""
+        self.stability_service.enable_image_generation()
+    
+    def disable_image_generation(self):
+        """Désactive la génération d'images"""
+        self.stability_service.disable_image_generation()
+    
+    def get_image_service_status(self) -> Dict[str, Any]:
+        """Retourne le statut détaillé du service d'images"""
+        status = self.stability_service.get_status()
+        
+        # Calculer le nombre d'images possibles avec 25 crédits gratuits
+        cost_per_image = self.stability_service.model_costs.get(self.stability_service.model, 1)
+        images_with_25_credits = int(25 / cost_per_image) if isinstance(cost_per_image, (int, float)) else "Calculer"
+        
+        status.update({
+            'service_type': 'Stability AI',
+            'integration': 'Intégré dans ollama_service.py',
+            'modes_available': self.stability_service.get_available_modes(),
+            'supports_cocktails': True,
+            'with_25_free_credits': f"~{images_with_25_credits} images possibles" if isinstance(images_with_25_credits, int) else "Calculer selon le modèle"
+        })
+        return status
+    
+    def set_image_cost_mode(self, mode: str):
+        """Change le mode de coût pour la génération d'images"""
+        self.stability_service.set_cost_mode(mode)
+    
+    def get_available_cost_modes(self) -> Dict[str, Dict]:
+        """Retourne les modes de coût disponibles"""
+        return self.stability_service.get_available_modes()
 
 
 # Classe de compatibilité pour l'ancien nom
@@ -886,6 +1201,10 @@ class OllamaService(UnifiedCocktailService):
     
     def __init__(self):
         super().__init__(ai_service_type="ollama")
+    
+    def generate_cocktail_image(self, image_prompt: str, cocktail_name: str = "") -> str:
+        """Génère une image de cocktail via le service unifié"""
+        return self.generate_image(image_prompt, cocktail_name)
 
 
 # Classe pour Mistral utilisant le même workflow
