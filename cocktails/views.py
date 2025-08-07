@@ -178,13 +178,17 @@ def cocktail_history_view(request):
     # Compter les cocktails filtrés
     filtered_count = filtered_cocktails.count()
     
-    # Pagination - 6 cocktails par page
+    # Pagination - 6 cocktails par page (pour desktop)
     paginator = Paginator(filtered_cocktails, 6)
     page_number = request.GET.get('page', 1)
     cocktails = paginator.get_page(page_number)
     
+    # Tous les cocktails non paginés pour le carousel mobile
+    all_filtered_cocktails = filtered_cocktails
+    
     context = {
         'cocktails': cocktails,
+        'all_cocktails': all_filtered_cocktails,  # Tous les cocktails pour le mobile
         'total_cocktails': total_cocktails,
         'filtered_count': filtered_count,
         'cocktails_with_alcohol': cocktails_with_alcohol,
