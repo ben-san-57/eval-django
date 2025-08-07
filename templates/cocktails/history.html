@@ -237,7 +237,7 @@
     <!-- Liste des cocktails améliorée -->
     {% if cocktails %}
     <!-- Desktop Grid -->
-    <div class="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div class="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
         {% for cocktail in cocktails %}
         <div class="cocktail-card group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100" 
              data-alcohol="{{ cocktail.alcohol_content }}" 
@@ -291,16 +291,19 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         {{ cocktail.preparation_time }} min
-                        <span class="mx-2">•</span>
-                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                        {{ cocktail.created_at|date:"d/m/Y" }}
                     </div>
                 </div>
                 
                 <!-- Description -->
-                <p class="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">{{ cocktail.description }}</p>
+                <p class="text-gray-600 text-sm mb-3 line-clamp-2 leading-relaxed">{{ cocktail.description }}</p>
+                
+                <!-- Date de création -->
+                <div class="flex items-center mb-4 text-xs text-gray-500">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Créé le {{ cocktail.created_at|date:"d/m/Y" }}
+                </div>
                 
                 <!-- Caractéristiques -->
                 <div class="flex flex-wrap gap-2 mb-4">
@@ -339,7 +342,6 @@
                 
                 <!-- Footer de la carte -->
                 <div class="flex justify-between items-center pt-4 border-t border-gray-100">
-                    <span class="text-xs text-gray-500">{{ cocktail.created_at|date:"d M Y" }}</span>
                     <a href="{% url 'cocktails:cocktail_detail' pk=cocktail.pk %}" 
                        class="bg-cocktail-primary hover:bg-purple-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors">
                         Voir détails
@@ -402,26 +404,27 @@
                             </div>
                             
                             <div class="p-5">
-                                <!-- Header de la carte -->
-                                <div class="mb-3">
-                                    <h3 class="text-lg font-bold text-gray-900 line-clamp-2 group-hover:text-cocktail-primary transition-colors">{{ cocktail.name }}</h3>
-                                    <div class="flex items-center mt-2 text-xs text-gray-500">
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        {{ cocktail.preparation_time }} min
-                                        <span class="mx-2">•</span>
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                        </svg>
-                                        {{ cocktail.created_at|date:"d/m/Y" }}
-                                    </div>
+                            <!-- Header de la carte -->
+                            <div class="mb-3">
+                                <h3 class="text-lg font-bold text-gray-900 line-clamp-2 group-hover:text-cocktail-primary transition-colors">{{ cocktail.name }}</h3>
+                                <div class="flex items-center mt-2 text-xs text-gray-500">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    {{ cocktail.preparation_time }} min
                                 </div>
-                                
-                                <!-- Description -->
-                                <p class="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">{{ cocktail.description }}</p>
-                                
-                                <!-- Caractéristiques -->
+                            </div>
+                            
+                            <!-- Description -->
+                            <p class="text-gray-600 text-sm mb-3 line-clamp-2 leading-relaxed">{{ cocktail.description }}</p>
+                            
+                            <!-- Date de création -->
+                            <div class="flex items-center mb-4 text-xs text-gray-500">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                Créé le {{ cocktail.created_at|date:"d/m/Y" }}
+                            </div>                                <!-- Caractéristiques -->
                                 <div class="flex flex-wrap gap-2 mb-4">
                                     <!-- Badge alcool -->
                                     {% if cocktail.alcohol_content == 'none' %}
@@ -458,7 +461,6 @@
                                 
                                 <!-- Footer de la carte -->
                                 <div class="flex justify-between items-center pt-4 border-t border-gray-100">
-                                    <span class="text-xs text-gray-500">{{ cocktail.created_at|date:"d M Y" }}</span>
                                     <a href="{% url 'cocktails:cocktail_detail' pk=cocktail.pk %}" 
                                        class="bg-cocktail-primary hover:bg-purple-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors">
                                         Voir détails
@@ -517,7 +519,7 @@
     <div class="mt-8 flex justify-center hidden sm:flex">
         <nav class="flex items-center space-x-2">
             {% if cocktails.has_previous %}
-                <a href="?page={{ cocktails.previous_page_number }}{% if current_filter != 'all' %}&filter={{ current_filter }}{% endif %}{% if current_sort != 'date_desc' %}&sort={{ current_sort }}{% endif %}" 
+                <a href="?page={{ cocktails.previous_page_number }}{% if current_filter != 'all' %}&filter={{ current_filter }}{% endif %}{% if current_sort != 'date_desc' %}&sort={{ current_sort }}{% endif %}&page_size={{ current_page_size }}" 
                    class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700">
                     Précédent
                 </a>
@@ -529,7 +531,7 @@
                         {{ num }}
                     </span>
                 {% else %}
-                    <a href="?page={{ num }}{% if current_filter != 'all' %}&filter={{ current_filter }}{% endif %}{% if current_sort != 'date_desc' %}&sort={{ current_sort }}{% endif %}" 
+                    <a href="?page={{ num }}{% if current_filter != 'all' %}&filter={{ current_filter }}{% endif %}{% if current_sort != 'date_desc' %}&sort={{ current_sort }}{% endif %}&page_size={{ current_page_size }}" 
                        class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700">
                         {{ num }}
                     </a>
@@ -537,7 +539,7 @@
             {% endfor %}
             
             {% if cocktails.has_next %}
-                <a href="?page={{ cocktails.next_page_number }}{% if current_filter != 'all' %}&filter={{ current_filter }}{% endif %}{% if current_sort != 'date_desc' %}&sort={{ current_sort }}{% endif %}" 
+                <a href="?page={{ cocktails.next_page_number }}{% if current_filter != 'all' %}&filter={{ current_filter }}{% endif %}{% if current_sort != 'date_desc' %}&sort={{ current_sort }}{% endif %}&page_size={{ current_page_size }}" 
                    class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700">
                     Suivant
                 </a>
@@ -565,12 +567,59 @@
 {% block extra_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Détection de la taille d'écran pour pagination dynamique
+    function getOptimalPageSize() {
+        return window.innerWidth >= 1536 ? 8 : 6;
+    }
+    
+    // Fonction pour recharger avec la bonne pagination
+    function adjustPaginationForScreenSize() {
+        const currentUrl = new URL(window.location);
+        const currentPageSize = getOptimalPageSize();
+        const urlPageSize = currentUrl.searchParams.get('page_size');
+        
+        // Si la taille de page n'est pas optimale pour l'écran actuel, recharger
+        if (urlPageSize != currentPageSize) {
+            currentUrl.searchParams.set('page_size', currentPageSize);
+            currentUrl.searchParams.delete('page'); // Retour à la page 1
+            window.location.href = currentUrl.toString();
+        }
+    }
+    
+    // Ajuster au chargement de la page
+    adjustPaginationForScreenSize();
+    
+    // Ajuster lors du redimensionnement de la fenêtre (avec debounce)
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(adjustPaginationForScreenSize, 300);
+    });
+
+    // Ajouter automatiquement page_size à tous les liens de navigation
+    function addPageSizeToLinks() {
+        const pageSize = getOptimalPageSize();
+        const links = document.querySelectorAll('a[href*="?"]');
+        
+        links.forEach(link => {
+            const url = new URL(link.href);
+            if (url.pathname === window.location.pathname) {
+                url.searchParams.set('page_size', pageSize);
+                link.href = url.toString();
+            }
+        });
+    }
+    
+    // Appliquer aux liens existants
+    addPageSizeToLinks();
+
     // Gestion du tri dynamique
     const sortSelect = document.getElementById('sort-select');
     if (sortSelect) {
         sortSelect.addEventListener('change', function() {
             const currentUrl = new URL(window.location);
             currentUrl.searchParams.set('sort', this.value);
+            currentUrl.searchParams.set('page_size', getOptimalPageSize()); // Maintenir la bonne taille de page
             // Retour à la page 1 quand on change le tri
             currentUrl.searchParams.delete('page');
             window.location.href = currentUrl.toString();

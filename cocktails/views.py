@@ -178,8 +178,15 @@ def cocktail_history_view(request):
     # Compter les cocktails filtrés
     filtered_count = filtered_cocktails.count()
     
-    # Pagination - 8 cocktails par page (optimisé pour grandes résolutions)
-    paginator = Paginator(filtered_cocktails, 8)
+    # Pagination dynamique basée sur la taille d'écran
+    # Grande résolution (≥1536px) : 8 cartes par page (4×2 grille)
+    # Résolution moyenne (<1536px) : 6 cartes par page (3×2 grille)
+    page_size = int(request.GET.get('page_size', 6))  # Default: 6 pour écrans moyens
+    # Sécurité : limiter les valeurs possibles
+    if page_size not in [6, 8]:
+        page_size = 6
+    
+    paginator = Paginator(filtered_cocktails, page_size)
     page_number = request.GET.get('page', 1)
     cocktails = paginator.get_page(page_number)
     
@@ -196,6 +203,7 @@ def cocktail_history_view(request):
         'favorite_cocktails': favorite_cocktails,
         'current_filter': filter_type,
         'current_sort': sort_by,
+        'current_page_size': page_size,
     }
     
     return render(request, 'cocktails/history.html', context)
