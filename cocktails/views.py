@@ -152,26 +152,56 @@ def cocktail_detail_view(request, pk):
 
 @login_required
 def cocktail_history_view(request):
-    """Vue de l'historique des cocktails avec pagination"""
+    """Vue de l'historique des cocktails avec filtres et pagination"""
+    # Récupérer tous les cocktails de l'utilisateur
     cocktails_list = CocktailRecipe.objects.filter(user=request.user).order_by('-created_at')
     
-    # Statistiques totales
+    # Récupérer les paramètres de filtre
+    filter_type = request.GET.get('filter', 'all')
+    sort_by = request.GET.get('sort', 'date_desc')
+    
+    # Appliquer les filtres
+    filtered_cocktails = cocktails_list
+    if filter_type == 'favorites':
+        filtered_cocktails = cocktails_list.filter(is_favorite=True)
+    elif filter_type == 'alcoholic':
+        filtered_cocktails = cocktails_list.exclude(alcohol_content='none')
+    elif filter_type == 'non-alcoholic':
+        filtered_cocktails = cocktails_list.filter(alcohol_content='none')
+    # filter_type == 'all' : pas de filtrage supplémentaire
+    
+    # Appliquer le tri
+    if sort_by == 'date_asc':
+        filtered_cocktails = filtered_cocktails.order_by('created_at')
+    elif sort_by == 'name_asc':
+        filtered_cocktails = filtered_cocktails.order_by('name')
+    elif sort_by == 'name_desc':
+        filtered_cocktails = filtered_cocktails.order_by('-name')
+    # sort_by == 'date_desc' : ordre par défaut déjà appliqué
+    
+    # Statistiques totales (sur tous les cocktails, pas seulement filtrés)
     total_cocktails = cocktails_list.count()
     cocktails_with_alcohol = cocktails_list.exclude(alcohol_content='none').count()
     cocktails_without_alcohol = cocktails_list.filter(alcohol_content='none').count()
     favorite_cocktails = cocktails_list.filter(is_favorite=True).count()
     
+    # Compter les cocktails filtrés
+    filtered_count = filtered_cocktails.count()
+    
     # Pagination - 6 cocktails par page
-    paginator = Paginator(cocktails_list, 6)
-    page_number = request.GET.get('page')
+    paginator = Paginator(filtered_cocktails, 6)
+    page_number = request.GET.get('page', 1)
     cocktails = paginator.get_page(page_number)
     
     context = {
         'cocktails': cocktails,
         'total_cocktails': total_cocktails,
+        'filtered_count': filtered_count,
         'cocktails_with_alcohol': cocktails_with_alcohol,
         'cocktails_without_alcohol': cocktails_without_alcohol,
         'favorite_cocktails': favorite_cocktails,
+        'current_filter': filter_type,
+        'current_sort': sort_by,
     }
     
     return render(request, 'cocktails/history.html', context)

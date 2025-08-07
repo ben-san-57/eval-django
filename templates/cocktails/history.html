@@ -75,31 +75,47 @@
         <div class="flex flex-wrap items-center gap-4">
             <span class="font-medium text-gray-700">Filtrer par :</span>
             
-            <button class="filter-btn active bg-cocktail-primary text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors" data-filter="all">
-                Tous
-            </button>
+            <a href="?filter=all{% if current_sort != 'date_desc' %}&sort={{ current_sort }}{% endif %}" 
+               class="filter-btn {% if current_filter == 'all' %}bg-cocktail-primary text-white{% else %}bg-gray-100 hover:bg-gray-200 text-gray-700{% endif %} px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                Tous ({{ total_cocktails }})
+            </a>
             
-            <button class="filter-btn bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors" data-filter="favorites">
-                Favoris
-            </button>
+            <a href="?filter=favorites{% if current_sort != 'date_desc' %}&sort={{ current_sort }}{% endif %}" 
+               class="filter-btn {% if current_filter == 'favorites' %}bg-cocktail-primary text-white{% else %}bg-gray-100 hover:bg-gray-200 text-gray-700{% endif %} px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                Favoris ({{ favorite_cocktails }})
+            </a>
             
-            <button class="filter-btn bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors" data-filter="alcoholic">
-                Avec alcool
-            </button>
+            <a href="?filter=alcoholic{% if current_sort != 'date_desc' %}&sort={{ current_sort }}{% endif %}" 
+               class="filter-btn {% if current_filter == 'alcoholic' %}bg-cocktail-primary text-white{% else %}bg-gray-100 hover:bg-gray-200 text-gray-700{% endif %} px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                Avec alcool ({{ cocktails_with_alcohol }})
+            </a>
             
-            <button class="filter-btn bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors" data-filter="non-alcoholic">
-                Sans alcool
-            </button>
+            <a href="?filter=non-alcoholic{% if current_sort != 'date_desc' %}&sort={{ current_sort }}{% endif %}" 
+               class="filter-btn {% if current_filter == 'non-alcoholic' %}bg-cocktail-primary text-white{% else %}bg-gray-100 hover:bg-gray-200 text-gray-700{% endif %} px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                Sans alcool ({{ cocktails_without_alcohol }})
+            </a>
             
             <div class="ml-auto">
-                <select class="bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                    <option>Trier par date (récent)</option>
-                    <option>Trier par date (ancien)</option>
-                    <option>Trier par nom (A-Z)</option>
-                    <option>Trier par nom (Z-A)</option>
+                <select id="sort-select" class="bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    <option value="date_desc" {% if current_sort == 'date_desc' %}selected{% endif %}>Trier par date (récent)</option>
+                    <option value="date_asc" {% if current_sort == 'date_asc' %}selected{% endif %}>Trier par date (ancien)</option>
+                    <option value="name_asc" {% if current_sort == 'name_asc' %}selected{% endif %}>Trier par nom (A-Z)</option>
+                    <option value="name_desc" {% if current_sort == 'name_desc' %}selected{% endif %}>Trier par nom (Z-A)</option>
                 </select>
             </div>
         </div>
+        
+        {% if current_filter != 'all' %}
+        <div class="mt-4 pt-4 border-t border-gray-200">
+            <p class="text-sm text-gray-600">
+                <span class="font-medium">{{ filtered_count }}</span> cocktail{{ filtered_count|pluralize }} 
+                {% if current_filter == 'favorites' %}favori{{ filtered_count|pluralize }}
+                {% elif current_filter == 'alcoholic' %}avec alcool
+                {% elif current_filter == 'non-alcoholic' %}sans alcool
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Liste des cocktails -->
@@ -196,7 +212,7 @@
     <div class="mt-8 flex justify-center">
         <nav class="flex items-center space-x-2">
             {% if cocktails.has_previous %}
-                <a href="?page={{ cocktails.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.difficulty %}&difficulty={{ request.GET.difficulty }}{% endif %}" 
+                <a href="?page={{ cocktails.previous_page_number }}{% if current_filter != 'all' %}&filter={{ current_filter }}{% endif %}{% if current_sort != 'date_desc' %}&sort={{ current_sort }}{% endif %}" 
                    class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700">
                     Précédent
                 </a>
@@ -208,7 +224,7 @@
                         {{ num }}
                     </span>
                 {% else %}
-                    <a href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.difficulty %}&difficulty={{ request.GET.difficulty }}{% endif %}" 
+                    <a href="?page={{ num }}{% if current_filter != 'all' %}&filter={{ current_filter }}{% endif %}{% if current_sort != 'date_desc' %}&sort={{ current_sort }}{% endif %}" 
                        class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700">
                         {{ num }}
                     </a>
@@ -216,7 +232,7 @@
             {% endfor %}
             
             {% if cocktails.has_next %}
-                <a href="?page={{ cocktails.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.difficulty %}&difficulty={{ request.GET.difficulty }}{% endif %}" 
+                <a href="?page={{ cocktails.next_page_number }}{% if current_filter != 'all' %}&filter={{ current_filter }}{% endif %}{% if current_sort != 'date_desc' %}&sort={{ current_sort }}{% endif %}" 
                    class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700">
                     Suivant
                 </a>
@@ -244,54 +260,20 @@
 {% block extra_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Système de filtres
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    const cocktailCards = document.querySelectorAll('.cocktail-card');
-    
-    filterButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // Retirer la classe active de tous les boutons
-            filterButtons.forEach(btn => {
-                btn.classList.remove('active', 'bg-cocktail-primary', 'text-white');
-                btn.classList.add('bg-gray-100', 'text-gray-700');
-            });
-            
-            // Ajouter la classe active au bouton cliqué
-            this.classList.add('active', 'bg-cocktail-primary', 'text-white');
-            this.classList.remove('bg-gray-100', 'text-gray-700');
-            
-            const filter = this.dataset.filter;
-            
-            cocktailCards.forEach(card => {
-                let shouldShow = true;
-                
-                switch(filter) {
-                    case 'favorites':
-                        shouldShow = card.dataset.favorite === 'true';
-                        break;
-                    case 'alcoholic':
-                        shouldShow = card.dataset.alcohol !== 'none';
-                        break;
-                    case 'non-alcoholic':
-                        shouldShow = card.dataset.alcohol === 'none';
-                        break;
-                    case 'all':
-                    default:
-                        shouldShow = true;
-                        break;
-                }
-                
-                if (shouldShow) {
-                    card.style.display = 'block';
-                    card.style.animation = 'fadeIn 0.3s ease-in';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
+    // Gestion du tri dynamique
+    const sortSelect = document.getElementById('sort-select');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            const currentUrl = new URL(window.location);
+            currentUrl.searchParams.set('sort', this.value);
+            // Retour à la page 1 quand on change le tri
+            currentUrl.searchParams.delete('page');
+            window.location.href = currentUrl.toString();
         });
-    });
+    }
     
     // Animation d'apparition des cartes
+    const cocktailCards = document.querySelectorAll('.cocktail-card');
     cocktailCards.forEach((card, index) => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(20px)';
@@ -303,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Animation CSS pour le fadeIn
+// Animation CSS
 const style = document.createElement('style');
 style.textContent = `
     @keyframes fadeIn {
