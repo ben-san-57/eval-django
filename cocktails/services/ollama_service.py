@@ -1051,22 +1051,78 @@ IMPORTANT:
     
     def _estimate_alcohol_content(self, ingredients: list) -> float:
         """Estime le degré d'alcool basé sur les ingrédients"""
-        alcohol_keywords = ['vodka', 'gin', 'rhum', 'whisky', 'tequila', 'cognac', 'liqueur', 'vin', 'champagne']
+        alcohol_keywords = [
+            'vodka', 'gin', 'rhum', 'rum', 'whisky', 'whiskey', 'tequila', 
+            'cognac', 'brandy', 'liqueur', 'vin', 'champagne', 'alcool',
+            'armagnac', 'calvados', 'absinthe', 'pastis', 'sambuca',
+            'amaretto', 'baileys', 'cointreau', 'grand marnier', 'kahlua',
+            'bourbon', 'scotch', 'martini', 'vermouth', 'porto', 'sherry',
+            'ambre', 'ambré', 'sec', 'blanc', 'brun', 'vieux'
+        ]
         
         alcohol_count = 0
-        for ing in ingredients:
-            ing_name = ing.get('name', '') if isinstance(ing, dict) else str(ing)
-            if any(keyword in ing_name.lower() for keyword in alcohol_keywords):
-                alcohol_count += 1
+        total_alcohol_volume = 0
         
+        logger.debug(f"Analyse des ingrédients pour estimer l'alcool: {ingredients}")
+        
+        for ing in ingredients:
+            # Gérer les différents formats d'ingrédients
+            if isinstance(ing, dict):
+                # Format avec clés 'nom'/'name' et 'quantite'/'quantity'
+                ing_name = ing.get('nom', ing.get('name', ''))
+                ing_quantity = ing.get('quantite', ing.get('quantity', ''))
+            else:
+                # Format texte simple
+                ing_name = str(ing)
+                ing_quantity = ''
+            
+            # Vérifier si l'ingrédient contient de l'alcool
+            ing_name_lower = ing_name.lower()
+            
+            # Exclure les faux positifs
+            false_positives = ['gingembre', 'ginger', 'orange', 'mangue']
+            is_false_positive = any(fp in ing_name_lower for fp in false_positives)
+            
+            if is_false_positive:
+                has_alcohol = False
+            else:
+                has_alcohol = any(keyword in ing_name_lower for keyword in alcohol_keywords)
+            
+            if has_alcohol:
+                alcohol_count += 1
+                logger.debug(f"   ✓ Alcool détecté: {ing_name}")
+                
+                # Estimer le volume d'alcool (extraction des ml)
+                if 'ml' in ing_quantity:
+                    try:
+                        volume = float(ing_quantity.split('ml')[0].strip())
+                        total_alcohol_volume += volume
+                    except:
+                        total_alcohol_volume += 30  # Volume par défaut
+                else:
+                    total_alcohol_volume += 30  # Volume par défaut si pas de quantité
+            else:
+                logger.debug(f"   - Non-alcoolisé: {ing_name}")
+        
+        logger.debug(f"Nombre d'ingrédients alcoolisés: {alcohol_count}, Volume total: {total_alcohol_volume}ml")
+        
+        # Calcul du degré d'alcool basé sur le nombre d'ingrédients et le volume
         if alcohol_count == 0:
             return 0.0
         elif alcohol_count == 1:
-            return random.uniform(8.0, 15.0)
+            # Un seul alcool - degré modéré
+            if total_alcohol_volume <= 30:
+                return random.uniform(8.0, 15.0)   # Faible
+            elif total_alcohol_volume <= 60:
+                return random.uniform(15.0, 25.0)  # Moyen
+            else:
+                return random.uniform(25.0, 35.0)  # Fort
         elif alcohol_count == 2:
-            return random.uniform(15.0, 25.0)
+            # Deux alcools - plus fort
+            return random.uniform(18.0, 30.0)
         else:
-            return random.uniform(25.0, 35.0)
+            # Trois alcools ou plus - très fort
+            return random.uniform(28.0, 40.0)
     
     def _convert_alcohol_degree_to_category(self, alcohol_degree: float) -> str:
         """Convertit un degré d'alcool en catégorie pour le modèle Django"""
