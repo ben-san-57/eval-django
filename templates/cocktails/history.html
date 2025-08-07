@@ -3,78 +3,95 @@
 {% block title %}Mes cocktails - Le Mixologue Augmenté{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto py-4 sm:py-6">
+<div class="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
     <!-- Header amélioré -->
     <div class="bg-gradient-to-br from-cocktail-primary to-purple-700 rounded-2xl shadow-2xl p-6 sm:p-8 mb-8 text-white">
-        <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center">
-            <div class="mb-6 lg:mb-0">
-                <div class="flex items-center mb-2">
-                    <div class="bg-white bg-opacity-20 rounded-full p-3 mr-4">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+        <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start">
+            <div class="mb-6 lg:mb-0 flex-1 lg:mr-8">
+                <!-- Header avec titre et collapse sur mobile -->
+                <button id="mobile-stats-toggle" class="flex items-center justify-between w-full sm:pointer-events-none mb-4" type="button">
+                    <div class="flex items-center">
+                        <div class="bg-white bg-opacity-20 rounded-full p-3 mr-4">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-3xl sm:text-4xl font-bold">🍹 Mes Créations</h1>
+                            <div class="flex items-center mt-2 text-purple-100">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                </svg>
+                                <p class="text-lg">Vos cocktails créés avec l'IA</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Chevron pour mobile seulement -->
+                    <div class="sm:hidden">
+                        <svg id="stats-chevron" class="w-6 h-6 text-white transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </div>
-                    <div>
-                        <h1 class="text-3xl sm:text-4xl font-bold">🍹 Mes Créations</h1>
-                        <div class="flex items-center mt-2 text-purple-100">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                            </svg>
-                            <p class="text-lg">Vos cocktails créés avec l'IA</p>
+                </button>
+                
+                <!-- Stats rapides avec bouton créer - Collapsibles sur mobile -->
+                <div id="stats-content" class="stats-content">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
+                        <div class="bg-white bg-opacity-10 rounded-lg p-3 text-center backdrop-blur-sm">
+                            <div class="text-2xl font-bold">{{ total_cocktails }}</div>
+                            <div class="text-xs text-purple-100">Total</div>
+                        </div>
+                        <div class="bg-white bg-opacity-10 rounded-lg p-3 text-center backdrop-blur-sm">
+                            <div class="text-2xl font-bold">{{ favorite_cocktails }}</div>
+                            <div class="text-xs text-purple-100">Favoris</div>
+                        </div>
+                        <div class="bg-white bg-opacity-10 rounded-lg p-3 text-center backdrop-blur-sm">
+                            <div class="text-2xl font-bold">{{ cocktails_with_alcohol }}</div>
+                            <div class="text-xs text-purple-100">Avec alcool</div>
+                        </div>
+                        <div class="bg-white bg-opacity-10 rounded-lg p-3 text-center backdrop-blur-sm">
+                            <div class="text-2xl font-bold">{{ cocktails_without_alcohol }}</div>
+                            <div class="text-xs text-purple-100">Sans alcool</div>
+                        </div>
+                        <!-- Bouton créer intégré comme 5ème stat -->
+                        <div class="col-span-2 sm:col-span-4 lg:col-span-1 flex justify-center">
+                            <a href="{% url 'cocktails:generate' %}" 
+                               class="group relative bg-white bg-opacity-10 backdrop-blur-sm hover:bg-opacity-20 text-white rounded-lg p-3 text-center shadow-lg transform hover:scale-105 transition-all duration-300 border border-white border-opacity-20 w-full"
+                               title="Créer un nouveau cocktail">
+                                <div class="absolute inset-0 bg-gradient-to-r from-cocktail-secondary to-yellow-400 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                                <div class="relative z-10">
+                                    <svg class="w-6 h-6 mx-auto mb-2 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                    <div class="text-xs text-purple-100 leading-tight">Créer un nouveau cocktail</div>
+                                </div>
+                            </a>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Stats rapides -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-                    <div class="bg-white bg-opacity-10 rounded-lg p-3 text-center backdrop-blur-sm">
-                        <div class="text-2xl font-bold">{{ total_cocktails }}</div>
-                        <div class="text-xs text-purple-100">Total</div>
-                    </div>
-                    <div class="bg-white bg-opacity-10 rounded-lg p-3 text-center backdrop-blur-sm">
-                        <div class="text-2xl font-bold">{{ favorite_cocktails }}</div>
-                        <div class="text-xs text-purple-100">Favoris</div>
-                    </div>
-                    <div class="bg-white bg-opacity-10 rounded-lg p-3 text-center backdrop-blur-sm">
-                        <div class="text-2xl font-bold">{{ cocktails_with_alcohol }}</div>
-                        <div class="text-xs text-purple-100">Avec alcool</div>
-                    </div>
-                    <div class="bg-white bg-opacity-10 rounded-lg p-3 text-center backdrop-blur-sm">
-                        <div class="text-2xl font-bold">{{ cocktails_without_alcohol }}</div>
-                        <div class="text-xs text-purple-100">Sans alcool</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Bouton créer amélioré -->
-            <div class="flex-shrink-0">
-                <a href="{% url 'cocktails:generate' %}" 
-                   class="group relative bg-white bg-opacity-20 backdrop-blur-sm hover:bg-opacity-30 text-white font-bold py-4 px-6 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center border border-white border-opacity-20">
-                    <div class="absolute inset-0 bg-gradient-to-r from-cocktail-secondary to-yellow-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                    <svg class="w-5 h-5 mr-3 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    <span class="text-sm sm:text-base">Créer un nouveau cocktail</span>
-                </a>
             </div>
         </div>
     </div>
-
-    <!-- Filtres ultra-modernes -->
     <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8 mb-8 backdrop-blur-sm">
         <!-- Header des filtres -->
         <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center">
+            <button id="mobile-filters-toggle" class="flex items-center w-full sm:w-auto sm:pointer-events-none" type="button">
                 <div class="bg-gradient-to-r from-cocktail-primary to-purple-600 rounded-full p-2 mr-3">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z"></path>
                     </svg>
                 </div>
-                <div>
-                    <h2 class="text-lg font-bold text-gray-800">Filtres & Tri</h2>
-                    <p class="text-sm text-gray-500">Personnalisez votre vue</p>
+                <div class="flex-1">
+                    <h2 class="text-lg font-bold text-gray-800 text-left">Filtres & Tri</h2>
+                    <p class="text-sm text-gray-500 text-left">Personnalisez votre vue</p>
                 </div>
-            </div>
+                <!-- Icône collapse (mobile seulement) -->
+                <div class="sm:hidden">
+                    <svg id="filters-chevron" class="w-5 h-5 text-gray-500 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+            </button>
             
             <!-- Compteur de résultats -->
             <div class="hidden sm:flex items-center bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2 rounded-full border border-blue-200">
@@ -87,7 +104,8 @@
             </div>
         </div>
         
-        <div class="space-y-6">
+        <!-- Contenu collapsible -->
+        <div id="filters-content" class="filters-content space-y-6">
             <!-- Section Filtres - Tous les filtres ensemble -->
             <div>
                 <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center">
@@ -232,6 +250,7 @@
             </div>
         </div>
         {% endif %}
+        </div>
     </div>
 
     <!-- Liste des cocktails améliorée -->
@@ -567,6 +586,126 @@
 {% block extra_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Toggle mobile stats collapse
+    const mobileStatsToggle = document.getElementById('mobile-stats-toggle');
+    const statsContent = document.getElementById('stats-content');
+    const statsChevron = document.getElementById('stats-chevron');
+    
+    if (mobileStatsToggle && statsContent && statsChevron) {
+        // Set initial state - collapsed on mobile by default
+        if (window.innerWidth < 640) {
+            statsContent.classList.add('hidden');
+            statsContent.style.maxHeight = '0';
+            statsChevron.style.transform = 'rotate(0deg)';
+            mobileStatsToggle.setAttribute('aria-expanded', 'false');
+        } else {
+            // Desktop - always expanded
+            statsContent.classList.remove('hidden');
+            statsContent.style.maxHeight = 'none';
+            mobileStatsToggle.setAttribute('aria-expanded', 'true');
+        }
+        
+        mobileStatsToggle.addEventListener('click', function() {
+            // Only toggle on mobile
+            if (window.innerWidth >= 640) return;
+            
+            if (statsContent.classList.contains('hidden')) {
+                // Show stats
+                statsContent.classList.remove('hidden');
+                statsContent.style.maxHeight = statsContent.scrollHeight + 'px';
+                statsChevron.style.transform = 'rotate(180deg)';
+                this.setAttribute('aria-expanded', 'true');
+            } else {
+                // Hide stats
+                statsContent.style.maxHeight = '0';
+                statsChevron.style.transform = 'rotate(0deg)';
+                this.setAttribute('aria-expanded', 'false');
+                
+                // Wait for transition to complete before adding hidden class
+                setTimeout(() => {
+                    statsContent.classList.add('hidden');
+                }, 300);
+            }
+        });
+        
+        // Handle window resize for stats
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 640) {
+                // Desktop - always show stats
+                statsContent.classList.remove('hidden');
+                statsContent.style.maxHeight = 'none';
+                statsChevron.style.transform = 'rotate(0deg)';
+                mobileStatsToggle.setAttribute('aria-expanded', 'true');
+            } else {
+                // Mobile - reset to collapsed state
+                statsContent.classList.add('hidden');
+                statsContent.style.maxHeight = '0';
+                statsChevron.style.transform = 'rotate(0deg)';
+                mobileStatsToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+
+    // Toggle mobile filters collapse
+    const mobileFiltersToggle = document.getElementById('mobile-filters-toggle');
+    const filtersContent = document.getElementById('filters-content');
+    const chevron = document.getElementById('filters-chevron');
+    
+    if (mobileFiltersToggle && filtersContent && chevron) {
+        // Set initial state - collapsed on mobile by default
+        if (window.innerWidth < 640) {
+            filtersContent.classList.add('hidden');
+            filtersContent.style.maxHeight = '0';
+            chevron.style.transform = 'rotate(0deg)';
+            mobileFiltersToggle.setAttribute('aria-expanded', 'false');
+        } else {
+            // Desktop - always expanded
+            filtersContent.classList.remove('hidden');
+            filtersContent.style.maxHeight = 'none';
+            mobileFiltersToggle.setAttribute('aria-expanded', 'true');
+        }
+        
+        mobileFiltersToggle.addEventListener('click', function() {
+            // Only toggle on mobile
+            if (window.innerWidth >= 640) return;
+            
+            if (filtersContent.classList.contains('hidden')) {
+                // Show filters
+                filtersContent.classList.remove('hidden');
+                filtersContent.style.maxHeight = filtersContent.scrollHeight + 'px';
+                chevron.style.transform = 'rotate(180deg)';
+                this.setAttribute('aria-expanded', 'true');
+            } else {
+                // Hide filters
+                filtersContent.style.maxHeight = '0';
+                chevron.style.transform = 'rotate(0deg)';
+                this.setAttribute('aria-expanded', 'false');
+                
+                // Wait for transition to complete before adding hidden class
+                setTimeout(() => {
+                    filtersContent.classList.add('hidden');
+                }, 300);
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 640) {
+                // Desktop - always show
+                filtersContent.classList.remove('hidden');
+                filtersContent.style.maxHeight = 'none';
+                chevron.style.transform = 'rotate(0deg)';
+                mobileFiltersToggle.setAttribute('aria-expanded', 'true');
+            } else {
+                // Mobile - reset to collapsed state
+                filtersContent.classList.add('hidden');
+                filtersContent.style.maxHeight = '0';
+                chevron.style.transform = 'rotate(0deg)';
+                mobileFiltersToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+
     // Détection de la taille d'écran pour pagination dynamique
     function getOptimalPageSize() {
         return window.innerWidth >= 1536 ? 8 : 6;
@@ -929,6 +1068,36 @@ style.textContent = `
 
     .favorite-btn:hover {
         transform: scale(1.1);
+    }
+    
+    /* Mobile collapse transitions */
+    #filters-content {
+        transition: max-height 0.3s ease-in-out;
+        overflow: hidden;
+    }
+    
+    #filters-chevron {
+        transition: transform 0.3s ease-in-out;
+    }
+    
+    /* Ensure smooth transitions on mobile toggle button */
+    #mobile-filters-toggle {
+        transition: background-color 0.2s ease;
+    }
+    
+    /* Stats collapse transitions */
+    #stats-content {
+        transition: max-height 0.3s ease-in-out;
+        overflow: hidden;
+    }
+    
+    #stats-chevron {
+        transition: transform 0.3s ease-in-out;
+    }
+    
+    /* Stats toggle button */
+    #mobile-stats-toggle {
+        transition: background-color 0.2s ease;
     }
 `;
 document.head.appendChild(style);
