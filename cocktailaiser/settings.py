@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     # 'tailwind',  # Désactivé temporairement pour test IA
-    'cocktail',
     'cocktails',
 ]
 
@@ -136,9 +135,6 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Media files (uploads)
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-
-# Tailwind CSS Configuration
-TAILWIND_APP_NAME = 'cocktail'
 
 # Login/Logout redirections
 LOGIN_URL = '/login/'

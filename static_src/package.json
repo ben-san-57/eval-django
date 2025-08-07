@@ -1,0 +1,21 @@
+{
+  "name": "cocktailaiser-static",
+  "version": "1.0.0",
+  "description": "Tailwind CSS configuration for cocktailaiser project",
+  "scripts": {
+    "start": "npm run dev",
+    "build": "npm run build:clean && npm run build:tailwind",
+    "build:clean": "rimraf ./dist",
+    "build:tailwind": "cross-env NODE_ENV=production tailwindcss -i ./src/styles.css -o ../static/css/output.css --minify",
+    "dev": "cross-env NODE_ENV=development tailwindcss -i ./src/styles.css -o ../static/css/output.css --watch"
+  },
+  "keywords": ["tailwind", "css", "django"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "tailwindcss": "^3.4.0",
+    "daisyui": "^5.0.43",
+    "cross-env": "^7.0.3",
+    "rimraf": "^3.0.2"
+  }
+}

@@ -1,12 +1,17 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./cocktailaiser/**/*.{html,js}",
+    "./cocktails/**/*.{html,js,py}",
     "./templates/**/*.{html,js}",
     "./static/js/**/*.js",
   ],
   theme: {
     extend: {},
   },
-  plugins: [],
+  plugins: [
+    require('daisyui'),
+  ],
+  daisyui: {
+    themes: ["light", "dark"],
+  },
 }
