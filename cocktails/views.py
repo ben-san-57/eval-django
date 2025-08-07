@@ -6,7 +6,7 @@ from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator
 from .forms import CustomUserCreationForm, CustomAuthenticationForm, CocktailGenerationForm
 from .models import CocktailRecipe, GenerationRequest
-from .services.ai_factory import ai_service
+from .services.ai_factory import AIServiceFactory
 import json
 import logging
 
@@ -29,16 +29,21 @@ def generate_cocktail_view(request):
             try:
                 user_prompt = form.cleaned_data['user_prompt']
                 context = form.cleaned_data.get('context', '')
+                ai_model = form.cleaned_data.get('ai_model', 'ollama')
                 
-                # Créer la demande de génération
+                # Créer la demande de génération avec le modèle choisi
                 generation_request = GenerationRequest.objects.create(
                     user=request.user,
                     user_prompt=user_prompt,
-                    context=context
+                    context=context,
+                    ai_model=ai_model
                 )
                 
+                # Obtenir le service IA selon le choix de l'utilisateur
+                ai_service = AIServiceFactory.get_service(ai_model)
+                
                 # Générer le cocktail avec l'IA
-                cocktail_data = ai_service.generate_cocktail(user_prompt, context)
+                cocktail_data = ai_service.generate_cocktail_recipe(user_prompt, context)
                 
                 # Créer le cocktail en base
                 cocktail = CocktailRecipe.objects.create(

@@ -113,3 +113,44 @@ Sois créatif avec le nom et l'histoire. Les ingrédients doivent être réalist
             user_prompt=user_prompt,
             context=context if context else "Aucun contexte spécifique"
         )
+    
+    def parse_ai_response(self, ai_response: str) -> Dict[str, Any]:
+        """Parse la réponse JSON de l'IA et la convertit au format attendu"""
+        try:
+            # Nettoyer et parser le JSON
+            clean_json = self._clean_json_response(ai_response)
+            data = json.loads(clean_json)
+            
+            # Convertir au format attendu par l'application
+            return {
+                'name': data.get('name', 'Cocktail Mystère'),
+                'description': data.get('description', 'Un cocktail créé spécialement pour vous'),
+                'ingredients': self._format_ingredients(data.get('ingredients', [])),
+                'music_ambiance': data.get('music_ambiance', 'Ambiance lounge décontractée'),
+                'difficulty_level': data.get('difficulty', 'medium').lower(),
+                'alcohol_content': data.get('strength', 'medium').lower(),
+                'preparation_time': data.get('preparation_time', '5 minutes'),
+                'instructions': data.get('instructions', []),
+                'glassware': data.get('glassware', 'Verre à cocktail'),
+                'garnish': data.get('garnish', 'Garniture au choix'),
+                'flavor_profile': data.get('flavor_profile', []),
+                'occasion': data.get('occasion', 'Toute occasion')
+            }
+        except Exception as e:
+            logger.error(f"Erreur parsing réponse IA: {e}")
+            raise AIServiceException(f"Erreur lors de l'analyse de la réponse: {e}")
+    
+    def _format_ingredients(self, ingredients) -> list:
+        """Formate la liste des ingrédients au format attendu"""
+        formatted = []
+        for ingredient in ingredients:
+            if isinstance(ingredient, dict):
+                # Format nouveau (avec type, etc.)
+                formatted.append({
+                    'nom': ingredient.get('name', ingredient.get('nom', 'Ingrédient inconnu')),
+                    'quantité': f"{ingredient.get('quantity', '')} {ingredient.get('unit', '')}".strip()
+                })
+            else:
+                # Format ancien (string simple)
+                formatted.append({'nom': str(ingredient), 'quantité': 'À doser'})
+        return formatted

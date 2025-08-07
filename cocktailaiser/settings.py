@@ -141,10 +141,33 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-# Configuration IA - Ollama avec Llama 3.1 et variables d'environnement
+# Configuration IA - Support Ollama et Mistral avec variables d'environnement
 AI_SERVICE_TYPE = os.getenv('AI_SERVICE_TYPE', 'ollama')
+
+# Configuration Ollama
 OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3.1')
 OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://127.0.0.1:11434')
+
+# Configuration Mistral
+MISTRAL_API_KEY = os.getenv('MISTRAL_API_KEY', '')
+MISTRAL_MODEL = os.getenv('MISTRAL_MODEL', 'mistral-large-latest')
+MISTRAL_BASE_URL = os.getenv('MISTRAL_BASE_URL', 'https://api.mistral.ai/v1')
+
+# Modèles disponibles pour l'utilisateur
+AVAILABLE_AI_MODELS = {
+    'ollama': {
+        'name': 'Ollama (Local)',
+        'description': 'Modèle local Llama 3.1 - Gratuit, privé',
+        'icon': '🦙',
+        'enabled': True
+    },
+    'mistral': {
+        'name': 'Mistral AI',
+        'description': 'Modèle cloud Mistral - Performant, payant',
+        'icon': '🌟',
+        'enabled': bool(MISTRAL_API_KEY)
+    }
+}
 
 # Configuration des logs avec variables d'environnement
 LOGGING = {

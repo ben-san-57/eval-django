@@ -41,6 +41,39 @@
                             </div>
                         {% endif %}
                     </div>
+                    
+                    <!-- Sélection du modèle IA -->
+                    <div class="border-t border-gray-200 pt-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-4">
+                            {{ form.ai_model.label }}
+                        </label>
+                        <div class="space-y-3">
+                            {% for choice in form.ai_model %}
+                                <div class="relative">
+                                    <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:bg-gray-50 
+                                               {% if choice.tag.attrs.checked %}border-cocktail-primary bg-purple-50{% else %}border-gray-200{% endif %}">
+                                        {{ choice.tag }}
+                                        <div class="ml-3 flex-1">
+                                            <div class="text-sm font-medium text-gray-900">
+                                                {{ choice.choice_label|truncatewords:3 }}
+                                            </div>
+                                            <div class="text-xs text-gray-500 mt-1">
+                                                {{ choice.choice_label|slice:"4:" }}
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if form.ai_model.errors %}
+                            <div class="mt-2 text-sm text-red-600">
+                                {{ form.ai_model.errors.0 }}
+                            </div>
+                        {% endif %}
+                        {% if form.ai_model.help_text %}
+                            <p class="mt-2 text-sm text-gray-500">{{ form.ai_model.help_text }}</p>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <div class="bg-gray-50 rounded-lg p-4">
@@ -101,6 +134,32 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.height = this.scrollHeight + 'px';
         });
     }
+    
+    // Gestion des boutons radio pour le modèle IA
+    const aiModelRadios = document.querySelectorAll('input[name="ai_model"]');
+    const aiModelLabels = document.querySelectorAll('label[for^="id_ai_model"]');
+    
+    // Fonction pour mettre à jour l'apparence des labels
+    function updateAIModelLabels() {
+        aiModelRadios.forEach((radio, index) => {
+            const label = radio.closest('label');
+            if (radio.checked) {
+                label.classList.add('border-cocktail-primary', 'bg-purple-50');
+                label.classList.remove('border-gray-200');
+            } else {
+                label.classList.remove('border-cocktail-primary', 'bg-purple-50');
+                label.classList.add('border-gray-200');
+            }
+        });
+    }
+    
+    // Écouter les changements sur les boutons radio
+    aiModelRadios.forEach(radio => {
+        radio.addEventListener('change', updateAIModelLabels);
+    });
+    
+    // Initialiser l'apparence au chargement
+    updateAIModelLabels();
 });
 </script>
 {% endblock %}

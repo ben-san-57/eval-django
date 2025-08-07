@@ -5,6 +5,11 @@ import uuid
 
 class GenerationRequest(models.Model):
     """Modèle pour stocker les demandes de génération de cocktails"""
+    AI_MODEL_CHOICES = [
+        ('ollama', 'Ollama (Local)'),
+        ('mistral', 'Mistral AI'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='generation_requests')
     user_prompt = models.TextField(
@@ -14,6 +19,12 @@ class GenerationRequest(models.Model):
         max_length=200, 
         blank=True, 
         help_text="Contexte ou occasion (ex: enterrement de vie de garçon)"
+    )
+    ai_model = models.CharField(
+        max_length=20,
+        choices=AI_MODEL_CHOICES,
+        default='ollama',
+        help_text="Modèle IA choisi par l'utilisateur"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     

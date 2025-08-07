@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
+from django.conf import settings
 
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -62,6 +63,31 @@ class CocktailGenerationForm(forms.Form):
         required=False,
         max_length=200
     )
+    
+    ai_model = forms.ChoiceField(
+        label="Modèle IA",
+        widget=forms.RadioSelect(attrs={
+            'class': 'text-cocktail-primary focus:ring-cocktail-primary'
+        }),
+        help_text="Choisissez le modèle IA pour générer votre cocktail"
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Construire les choix dynamiquement selon la configuration
+        available_models = getattr(settings, 'AVAILABLE_AI_MODELS', {})
+        choices = []
+        
+        for model_key, model_info in available_models.items():
+            if model_info.get('enabled', True):
+                label = f"{model_info['icon']} {model_info['name']} - {model_info['description']}"
+                choices.append((model_key, label))
+        
+        if not choices:  # Fallback si aucun modèle configuré
+            choices = [('ollama', '🦙 Ollama (Local) - Modèle par défaut')]
+        
+        self.fields['ai_model'].choices = choices
+        self.fields['ai_model'].initial = choices[0][0] if choices else 'ollama'
     
     def clean_user_prompt(self):
         prompt = self.cleaned_data['user_prompt'].strip()
