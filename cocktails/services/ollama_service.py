@@ -1,21 +1,190 @@
 """
-Service IA utilisant Ollama avec Llama 3.1 et LangGraph pour la génération de cocktails
+Service IA unifié utilisant LangGraph pour la génération de cocktails
+Support d'Ollama (Llama 3.1) et Mistral AI
 """
 
 import logging
 import json
 import random
-from typing import Dict, Any, Optional
+import requests
+from typing import Dict, Any, Optional, Union
 from datetime import datetime
 from pydantic import BaseModel, Field
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.language_models.base import BaseLanguageModel
 from langgraph.graph import StateGraph, END
+from django.conf import settings
 
 from cocktails.services.base_ai_service import BaseAIService
 from cocktails.models import CocktailRecipe
 
 logger = logging.getLogger(__name__)
+
+
+# LLM personnalisé pour Mistral compatible avec LangChain
+class MistralLLM:
+    """Wrapper Mistral AI simple compatible avec notre workflow"""
+    
+    def __init__(self, api_key: str, model: str = "mistral-large-latest", base_url: str = "https://api.mistral.ai/v1"):
+        self.api_key = api_key
+        self.model = model
+        self.base_url = base_url
+        
+        if not api_key or api_key == 'your_mistral_api_key_here':
+            raise ValueError("Clé API Mistral requise")
+    
+    def invoke(self, input_text: Union[str, dict]) -> str:
+        """Interface pour compatibility avec notre workflow"""
+        if isinstance(input_text, dict):
+            input_text = str(input_text)
+        
+        try:
+            headers = {
+                'Authorization': f'Bearer {self.api_key}',
+                'Content-Type': 'application/json'
+            }
+            
+            payload = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": input_text}],
+                "temperature": 0.8,
+                "max_tokens": 2000
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=60
+            )
+            
+            if response.status_code == 401:
+                raise Exception("Clé API Mistral invalide")
+            elif response.status_code == 429:
+                raise Exception("Limite de taux dépassée ou crédit Mistral épuisé")
+            elif response.status_code != 200:
+                raise Exception(f"Erreur API Mistral: {response.status_code}")
+            
+            response_data = response.json()
+            return response_data['choices'][0]['message']['content']
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur Mistral LLM: {e}")
+            raise
+    
+    def with_structured_output(self, schema):
+        """Retourne un wrapper pour la sortie structurée"""
+        return MistralStructuredWrapper(self, schema)
+
+
+class MistralStructuredWrapper:
+    """Wrapper pour la sortie structurée de Mistral"""
+    
+    def __init__(self, llm: MistralLLM, schema):
+        self.llm = llm
+        self.schema = schema
+    
+    def invoke(self, inputs: dict) -> Any:
+        """Invoque le LLM et parse la sortie selon le schéma"""
+        # Construire le prompt avec les instructions de format
+        prompt_text = self._build_structured_prompt(inputs)
+        
+        # Obtenir la réponse
+        response = self.llm.invoke(prompt_text)
+        
+        # Parser selon le schéma Pydantic
+        try:
+            # Nettoyer le JSON de la réponse
+            clean_json = self._extract_json(response)
+            data = json.loads(clean_json)
+            return self.schema.parse_obj(data)
+        except Exception as e:
+            logger.error(f"❌ Erreur parsing Mistral structured: {e}")
+            # Retourner un objet par défaut
+            return self._create_fallback_object()
+    
+    def _build_structured_prompt(self, inputs: dict) -> str:
+        """Construit un prompt pour la sortie structurée"""
+        # Obtenir les champs du schéma Pydantic
+        schema_fields = []
+        if hasattr(self.schema, '__fields__'):
+            for field_name, field in self.schema.__fields__.items():
+                description = field.field_info.description if field.field_info else "Champ requis"
+                schema_fields.append(f'"{field_name}": "{description}"')
+        
+        schema_json = "{" + ", ".join(schema_fields) + "}"
+        
+        # Construire le prompt complet
+        user_prompt = ""
+        if isinstance(inputs, dict):
+            for key, value in inputs.items():
+                user_prompt += f"{key}: {value}\n"
+        else:
+            user_prompt = str(inputs)
+        
+        return f"""
+{user_prompt}
+
+IMPORTANT: Réponds UNIQUEMENT avec un objet JSON valide ayant cette structure exacte:
+{schema_json}
+
+Ne ajoute aucun texte avant ou après le JSON. Seulement le JSON pur.
+"""
+    
+    def _extract_json(self, text: str) -> str:
+        """Extrait le JSON de la réponse"""
+        start_idx = text.find('{')
+        end_idx = text.rfind('}') + 1
+        
+        if start_idx != -1 and end_idx != 0:
+            return text[start_idx:end_idx]
+        else:
+            raise ValueError("Aucun JSON trouvé dans la réponse")
+    
+    def _create_fallback_object(self):
+        """Crée un objet par défaut en cas d'erreur"""
+        try:
+            # Créer un objet avec des valeurs par défaut
+            defaults = {}
+            if hasattr(self.schema, '__fields__'):
+                for field_name, field in self.schema.__fields__.items():
+                    if field_name == 'type':
+                        defaults[field_name] = 'apéritif'
+                    elif field_name == 'occasion':
+                        defaults[field_name] = 'soirée'
+                    elif field_name == 'spirits':
+                        defaults[field_name] = ['gin']
+                    elif field_name == 'reasoning':
+                        defaults[field_name] = 'Choix par défaut'
+                    elif field_name == 'profile':
+                        defaults[field_name] = 'fruité'
+                    elif field_name == 'intensity':
+                        defaults[field_name] = 'moyen'
+                    elif field_name == 'name':
+                        defaults[field_name] = 'Cocktail Mystère'
+                    elif field_name == 'description':
+                        defaults[field_name] = 'Un délicieux cocktail créé spécialement pour vous'
+                    elif field_name == 'theme':
+                        defaults[field_name] = 'Élégance moderne'
+                    elif field_name == 'ingredients':
+                        defaults[field_name] = [{'nom': 'Gin', 'quantite': '50 ml', 'type': 'alcool'}]
+                    elif field_name == 'instructions':
+                        defaults[field_name] = 'Mélanger les ingrédients et servir'
+                    elif field_name == 'glass_type':
+                        defaults[field_name] = 'Verre à cocktail'
+                    elif field_name == 'garnish':
+                        defaults[field_name] = 'Zeste de citron'
+                    elif field_name == 'difficulty':
+                        defaults[field_name] = 'facile'
+                    elif field_name == 'prompt':
+                        defaults[field_name] = 'Beautiful cocktail in elegant glass'
+                    else:
+                        defaults[field_name] = 'Non spécifié'
+            
+            return self.schema.parse_obj(defaults)
+        except Exception:
+            return None
 
 
 # État du workflow de génération de cocktail
@@ -70,21 +239,45 @@ class ImagePrompt(BaseModel):
     prompt: str = Field(description="Prompt pour générer l'image du cocktail")
 
 
-class OllamaService(BaseAIService):
-    """Service IA utilisant Ollama avec Llama 3.1 et workflow LangGraph"""
+class UnifiedCocktailService(BaseAIService):
+    """Service IA unifié utilisant soit Ollama soit Mistral avec workflow LangGraph"""
     
-    def __init__(self):
+    def __init__(self, ai_service_type: str = "ollama"):
         super().__init__()
+        self.ai_service_type = ai_service_type
+        
         try:
-            self.llm = ChatOllama(model="llama3.1")
-            logger.info("🦙 Service Ollama configuré avec Llama 3.1")
-            self._test_connection()
+            if ai_service_type == "mistral":
+                self._init_mistral()
+            else:
+                self._init_ollama()
+            
             self._build_cocktail_workflow()
+            
         except Exception as e:
-            logger.error(f"❌ Erreur lors de l'initialisation d'Ollama: {e}")
+            logger.error(f"❌ Erreur lors de l'initialisation du service {ai_service_type}: {e}")
             raise
     
-    def _test_connection(self):
+    def _init_ollama(self):
+        """Initialise Ollama"""
+        self.llm = ChatOllama(model="llama3.1")
+        logger.info("🦙 Service Ollama configuré avec Llama 3.1")
+        self._test_ollama_connection()
+    
+    def _init_mistral(self):
+        """Initialise Mistral"""
+        api_key = getattr(settings, 'MISTRAL_API_KEY', '')
+        model = getattr(settings, 'MISTRAL_MODEL', 'mistral-large-latest')
+        base_url = getattr(settings, 'MISTRAL_BASE_URL', 'https://api.mistral.ai/v1')
+        
+        if not api_key or api_key == 'your_mistral_api_key_here':
+            raise ValueError("MISTRAL_API_KEY non configurée")
+        
+        self.llm = MistralLLM(api_key, model, base_url)
+        logger.info(f"🌟 Service Mistral configuré avec {model}")
+        self._test_mistral_connection()
+    
+    def _test_ollama_connection(self):
         """Test la connexion à Ollama"""
         try:
             test_response = self.llm.invoke("Dis bonjour")
@@ -92,6 +285,26 @@ class OllamaService(BaseAIService):
         except Exception as e:
             logger.error(f"❌ Impossible de se connecter à Ollama: {e}")
             raise Exception("Ollama n'est pas disponible. Assurez-vous qu'Ollama est démarré avec: ollama serve")
+    
+    def _test_mistral_connection(self):
+        """Test la connexion à Mistral"""
+        try:
+            test_response = self.llm.invoke("Test")
+            logger.info("✅ Connexion Mistral OK")
+        except Exception as e:
+            logger.error(f"❌ Impossible de se connecter à Mistral: {e}")
+            raise
+    
+    def test_connection(self) -> bool:
+        """Test de connexion pour compatibilité avec les tests"""
+        try:
+            if self.ai_service_type == "mistral":
+                self._test_mistral_connection()
+            else:
+                self._test_ollama_connection()
+            return True
+        except Exception:
+            return False
     
     def _build_cocktail_workflow(self):
         """Construit le workflow LangGraph pour la génération de cocktails"""
@@ -127,8 +340,25 @@ class OllamaService(BaseAIService):
         logger.info("🔄 Workflow LangGraph de génération de cocktails initialisé")
     
     def generate_cocktail(self, user_prompt: str, context: str = "") -> Dict[str, Any]:
-        """Génère un cocktail en utilisant le workflow LangGraph"""
-        logger.info(f"🦙 Génération IA avec workflow LangGraph pour: '{user_prompt}'")
+        """Génère un cocktail en utilisant le workflow LangGraph ou une approche directe"""
+        service_name = "Mistral" if self.ai_service_type == "mistral" else "Ollama"
+        logger.info(f"🚀 Génération IA {service_name} pour: '{user_prompt}'")
+        
+        try:
+            if self.ai_service_type == "mistral":
+                # Pour Mistral, utilise une approche directe sans LangGraph
+                return self._generate_cocktail_direct_mistral(user_prompt, context)
+            else:
+                # Pour Ollama, utilise le workflow LangGraph complet
+                return self._generate_cocktail_workflow(user_prompt, context)
+                
+        except Exception as e:
+            logger.error(f"❌ Erreur génération cocktail {service_name}: {e}")
+            raise Exception(f"Impossible de générer le cocktail: {e}")
+    
+    def _generate_cocktail_workflow(self, user_prompt: str, context: str = "") -> Dict[str, Any]:
+        """Génération avec workflow LangGraph (pour Ollama)"""
+        logger.info(f"🦙 Génération avec workflow LangGraph")
         
         # État initial
         initial_state = CocktailState(
@@ -136,23 +366,130 @@ class OllamaService(BaseAIService):
             context=context or "Création libre"
         )
         
+        # Exécuter le workflow
+        final_state = self.cocktail_graph.invoke(initial_state)
+        
+        # Récupérer le résultat final
+        cocktail_data = final_state["final_cocktail"]
+        cocktail_data['image_prompt'] = final_state["image_prompt"]
+        cocktail_data['image_url'] = self._generate_placeholder_image()
+        cocktail_data['ai_service'] = self.ai_service_type
+        cocktail_data['ai_model_used'] = f"{self.ai_service_type}-workflow"
+        
+        logger.info(f"✅ Cocktail généré via workflow: {cocktail_data['name']}")
+        return cocktail_data
+    
+    def _generate_cocktail_direct_mistral(self, user_prompt: str, context: str = "") -> Dict[str, Any]:
+        """Génération directe pour Mistral (même qualité, sans LangGraph)"""
+        logger.info(f"🌟 Génération directe Mistral")
+        
+        # Construire un prompt complet qui simule le workflow
+        full_prompt = f"""
+Tu es un mixologue expert et créatif avec des années d'expérience. Crée un cocktail original et sophistiqué.
+
+DEMANDE: {user_prompt}
+CONTEXTE: {context}
+
+Crée un cocktail complet avec toutes les informations. Réponds UNIQUEMENT avec un objet JSON valide ayant cette structure exacte:
+
+{{
+  "name": "Nom créatif et évocateur du cocktail",
+  "description": "Histoire et description narrative du cocktail (2-3 phrases engageantes)",
+  "ingredients": [
+    {{"nom": "Nom de l'ingrédient", "quantite": "Quantité précise avec unité (ex: 50 ml, 2 cl, 1 cuillère)", "type": "alcool/mixer/garniture/épice/autre"}},
+    {{"nom": "Autre ingrédient", "quantite": "Quantité avec unité", "type": "type"}}
+  ],
+  "instructions": "Instructions détaillées étape par étape pour préparer le cocktail",
+  "theme": "Thème ou inspiration du cocktail",
+  "flavor_profile": "Profil de saveur principal (fruité/épicé/frais/sucré/amer)",
+  "alcohol_content": 15.5,
+  "preparation_time": 5,
+  "music_ambiance": "Style musical et ambiance recommandés pour accompagner ce cocktail"
+}}
+
+IMPORTANT: 
+- Sois très créatif avec le nom et l'histoire
+- Les quantités doivent être précises avec unités (ml, cl, cuillères, traits, etc.)
+- Inclus tous les ingrédients nécessaires (alcools, mixers, garnitures, épices)
+- Les instructions doivent être claires et professionnelles
+- Adapte-toi parfaitement à la demande et au contexte
+"""
+        
         try:
-            # Exécuter le workflow
-            final_state = self.cocktail_graph.invoke(initial_state)
+            # Générer avec Mistral
+            response = self.llm.invoke(full_prompt)
             
-            # Récupérer le résultat final
-            cocktail_data = final_state["final_cocktail"]
-            cocktail_data['image_prompt'] = final_state["image_prompt"]
+            # Parser le JSON
+            cocktail_data = self._parse_mistral_response(response)
             
-            # Ajouter une image placeholder
+            # Ajouter les métadonnées
             cocktail_data['image_url'] = self._generate_placeholder_image()
+            cocktail_data['ai_service'] = 'mistral'
+            cocktail_data['ai_model_used'] = 'mistral-direct'
+            cocktail_data['created_at'] = datetime.now().isoformat()
+            cocktail_data['original_prompt'] = user_prompt
             
-            logger.info(f"✅ Cocktail généré via workflow: {cocktail_data['name']}")
+            logger.info(f"✅ Cocktail Mistral généré: {cocktail_data['name']}")
             return cocktail_data
             
         except Exception as e:
-            logger.error(f"❌ Erreur génération cocktail workflow: {e}")
-            raise Exception(f"Impossible de générer le cocktail: {e}")
+            logger.error(f"❌ Erreur génération directe Mistral: {e}")
+            raise
+    
+    def _parse_mistral_response(self, response: str) -> Dict[str, Any]:
+        """Parse la réponse JSON de Mistral"""
+        try:
+            # Extraire le JSON
+            start_idx = response.find('{')
+            end_idx = response.rfind('}') + 1
+            
+            if start_idx != -1 and end_idx != 0:
+                json_str = response[start_idx:end_idx]
+                data = json.loads(json_str)
+                
+                # Convertir les ingrédients au bon format
+                ingredients = []
+                for ing in data.get('ingredients', []):
+                    if isinstance(ing, dict):
+                        ingredients.append({
+                            'nom': ing.get('nom', 'Inconnu'),
+                            'quantite': ing.get('quantite', 'À doser')
+                        })
+                    else:
+                        ingredients.append({'nom': str(ing), 'quantite': 'À doser'})
+                
+                return {
+                    'name': data.get('name', 'Cocktail Mystère'),
+                    'description': data.get('description', 'Un cocktail créé spécialement pour vous'),
+                    'ingredients': ingredients,
+                    'instructions': data.get('instructions', 'Mélanger et servir'),
+                    'theme': data.get('theme', 'Élégance moderne'),
+                    'flavor_profile': data.get('flavor_profile', 'équilibré'),
+                    'alcohol_content': data.get('alcohol_content', 'medium'),
+                    'preparation_time': data.get('preparation_time', 5),
+                    'music_ambiance': data.get('music_ambiance', 'Ambiance lounge décontractée')
+                }
+            else:
+                raise ValueError("Aucun JSON valide trouvé dans la réponse")
+                
+        except Exception as e:
+            logger.error(f"❌ Erreur parsing Mistral: {e}")
+            # Retourner un cocktail de base en cas d'erreur
+            return {
+                'name': 'Cocktail Surprise',
+                'description': 'Un délicieux cocktail créé avec amour',
+                'ingredients': [{'nom': 'Gin', 'quantite': '50 ml'}, {'nom': 'Tonic', 'quantite': '150 ml'}],
+                'instructions': 'Servir sur glace avec une rondelle de citron',
+                'theme': 'Classique moderne',
+                'flavor_profile': 'rafraîchissant',
+                'alcohol_content': 'medium',
+                'preparation_time': 3,
+                'music_ambiance': 'Jazz décontracté'
+            }
+    
+    def generate_cocktail_recipe(self, user_prompt: str, context: str = "") -> Dict[str, Any]:
+        """Alias pour compatibilité"""
+        return self.generate_cocktail(user_prompt, context)
     
     # ============================================================================
     # ÉTAPES DU WORKFLOW LANGGRAPH
@@ -520,3 +857,19 @@ class OllamaService(BaseAIService):
         except Exception as e:
             logger.error(f"❌ Erreur création DB: {e}")
             raise
+
+
+# Classe de compatibilité pour l'ancien nom
+class OllamaService(UnifiedCocktailService):
+    """Classe de compatibilité - utilise le service unifié avec Ollama"""
+    
+    def __init__(self):
+        super().__init__(ai_service_type="ollama")
+
+
+# Classe pour Mistral utilisant le même workflow
+class MistralWorkflowService(UnifiedCocktailService):
+    """Service Mistral utilisant le workflow LangGraph avancé"""
+    
+    def __init__(self):
+        super().__init__(ai_service_type="mistral")

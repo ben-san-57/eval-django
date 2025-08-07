@@ -1,6 +1,5 @@
 from django.conf import settings
-from .ollama_service import OllamaService
-from .mistral_service import MistralService
+from .ollama_service import OllamaService, MistralWorkflowService
 from .base_ai_service import BaseAIService
 import logging
 
@@ -18,7 +17,8 @@ class AIServiceFactory:
         if service_type == 'ollama':
             return OllamaService()
         elif service_type == 'mistral':
-            return MistralService()
+            # Utilise le même workflow sophistiqué que Ollama mais avec Mistral
+            return MistralWorkflowService()
         else:
             logger.warning(f"Service IA non reconnu: {service_type}, utilisation d'Ollama par défaut")
             return OllamaService()

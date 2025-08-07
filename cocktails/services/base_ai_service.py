@@ -145,10 +145,24 @@ Sois créatif avec le nom et l'histoire. Les ingrédients doivent être réalist
         formatted = []
         for ingredient in ingredients:
             if isinstance(ingredient, dict):
-                # Format nouveau (avec type, etc.)
+                # Format nouveau (avec quantity et unit séparés)
+                name = ingredient.get('name', ingredient.get('nom', 'Ingrédient inconnu'))
+                quantity = ingredient.get('quantity', ingredient.get('quantité', ''))
+                unit = ingredient.get('unit', '')
+                
+                # Si on a quantity et unit, les combiner
+                if quantity and unit:
+                    full_quantity = f"{quantity} {unit}".strip()
+                elif quantity:  # Seulement quantity
+                    full_quantity = str(quantity).strip()
+                elif unit:  # Seulement unit (rare)
+                    full_quantity = unit.strip()
+                else:  # Ni quantity ni unit
+                    full_quantity = 'À doser'
+                
                 formatted.append({
-                    'nom': ingredient.get('name', ingredient.get('nom', 'Ingrédient inconnu')),
-                    'quantité': f"{ingredient.get('quantity', '')} {ingredient.get('unit', '')}".strip()
+                    'nom': name,
+                    'quantité': full_quantity
                 })
             else:
                 # Format ancien (string simple)
