@@ -436,15 +436,21 @@ IMPORTANT:
             logger.error(f"❌ Erreur génération directe Mistral: {e}")
             raise
     
-    def _parse_mistral_response(self, response: str) -> Dict[str, Any]:
+    def _parse_mistral_response(self, response) -> Dict[str, Any]:
         """Parse la réponse JSON de Mistral"""
         try:
+            # Extraire le contenu de l'AIMessage si nécessaire
+            if hasattr(response, 'content'):
+                response_text = response.content
+            else:
+                response_text = str(response)
+            
             # Extraire le JSON
-            start_idx = response.find('{')
-            end_idx = response.rfind('}') + 1
+            start_idx = response_text.find('{')
+            end_idx = response_text.rfind('}') + 1
             
             if start_idx != -1 and end_idx != 0:
-                json_str = response[start_idx:end_idx]
+                json_str = response_text[start_idx:end_idx]
                 data = json.loads(json_str)
                 
                 # Convertir les ingrédients au bon format
@@ -458,6 +464,9 @@ IMPORTANT:
                     else:
                         ingredients.append({'nom': str(ing), 'quantite': 'À doser'})
                 
+                # Détecter automatiquement le niveau d'alcool basé sur les ingrédients
+                alcohol_category = self._convert_alcohol_degree_to_category(self._estimate_alcohol_content(ingredients))
+                
                 return {
                     'name': data.get('name', 'Cocktail Mystère'),
                     'description': data.get('description', 'Un cocktail créé spécialement pour vous'),
@@ -465,7 +474,7 @@ IMPORTANT:
                     'instructions': data.get('instructions', 'Mélanger et servir'),
                     'theme': data.get('theme', 'Élégance moderne'),
                     'flavor_profile': data.get('flavor_profile', 'équilibré'),
-                    'alcohol_content': data.get('alcohol_content', 'medium'),
+                    'alcohol_content': alcohol_category,
                     'preparation_time': data.get('preparation_time', 5),
                     'music_ambiance': data.get('music_ambiance', 'Ambiance lounge décontractée')
                 }
@@ -475,15 +484,16 @@ IMPORTANT:
         except Exception as e:
             logger.error(f"❌ Erreur parsing Mistral: {e}")
             # Retourner un cocktail de base en cas d'erreur
+            fallback_ingredients = [{'nom': 'Jus d\'orange', 'quantite': '200 ml'}, {'nom': 'Eau gazeuse', 'quantite': '150 ml'}]
             return {
-                'name': 'Cocktail Surprise',
-                'description': 'Un délicieux cocktail créé avec amour',
-                'ingredients': [{'nom': 'Gin', 'quantite': '50 ml'}, {'nom': 'Tonic', 'quantite': '150 ml'}],
-                'instructions': 'Servir sur glace avec une rondelle de citron',
-                'theme': 'Classique moderne',
-                'flavor_profile': 'rafraîchissant',
-                'alcohol_content': 'medium',
-                'preparation_time': 3,
+                'name': 'Cocktail Surprise Sans Alcool',
+                'description': 'Un délicieux cocktail rafraîchissant créé avec amour',
+                'ingredients': fallback_ingredients,
+                'instructions': 'Mélanger dans un verre rempli de glaçons et garnir d\'une tranche d\'orange',
+                'theme': 'Classique rafraîchissant',
+                'flavor_profile': 'fruité et pétillant',
+                'alcohol_content': self._convert_alcohol_degree_to_category(self._estimate_alcohol_content(fallback_ingredients)),
+                'preparation_time': 2,
                 'music_ambiance': 'Jazz décontracté'
             }
     
@@ -713,7 +723,7 @@ IMPORTANT:
             'ingredients': ingredients_list,  # Utiliser la liste convertie
             'theme': state.cocktail_concept["theme"],
             'flavor_profile': state.flavor_profile,
-            'alcohol_content': self._estimate_alcohol_content(ingredients_list),
+            'alcohol_content': self._convert_alcohol_degree_to_category(self._estimate_alcohol_content(ingredients_list)),
             'preparation_time': self._estimate_prep_time_from_ingredients(ingredients_list),
             'original_prompt': state.user_prompt,
             'created_at': datetime.now().isoformat(),
@@ -774,6 +784,17 @@ IMPORTANT:
             return random.uniform(15.0, 25.0)
         else:
             return random.uniform(25.0, 35.0)
+    
+    def _convert_alcohol_degree_to_category(self, alcohol_degree: float) -> str:
+        """Convertit un degré d'alcool en catégorie pour le modèle Django"""
+        if alcohol_degree == 0.0:
+            return 'none'
+        elif alcohol_degree < 10:
+            return 'low'
+        elif alcohol_degree < 20:
+            return 'medium'
+        else:
+            return 'high'
     
     def _estimate_prep_time_from_ingredients(self, ingredients: list) -> int:
         """Estime le temps de préparation selon le nombre d'ingrédients"""
