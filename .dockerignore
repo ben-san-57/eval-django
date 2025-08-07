@@ -1,0 +1,150 @@
+# ==============================================================================
+# .dockerignore - Le Mixologue Augmenté
+# Exclut les fichiers inutiles du contexte Docker pour optimiser le build
+# ==============================================================================
+
+# Environnements virtuels Python
+venv/
+env/
+.venv/
+.env/
+ENV/
+env.bak/
+venv.bak/
+
+# Fichiers de configuration locaux
+.env
+.env.local
+.env.development
+.env.test
+.env.production.local
+
+# Base de données SQLite de développement
+db.sqlite3
+*.db
+*.sqlite
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Tests et couverture
+.coverage
+.pytest_cache/
+.tox/
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+htmlcov/
+
+# Documentation
+docs/_build/
+.sphinx/
+*.md
+
+# IDE et éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Node.js (pour Tailwind)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Media files en développement
+media/
+!media/.gitkeep
+
+# Fichiers statiques de développement
+static/
+!static/.gitkeep
+
+# Fichiers de test
+test_*.py
+*_test.py
+tests/
+pytest.ini
+tox.ini
+
+# Fichiers temporaires
+*.tmp
+*.temp
+.tmp/
+temp/
+
+# Backup files
+*.bak
+*.backup
+
+# Monitoring et outils de développement
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Certificats et clés (sauf ceux nécessaires)
+*.key
+*.pem
+*.crt
+*.p12
+
+# Données sensibles
+secrets/
+.secrets/
+
+# Scripts de développement
+scripts/dev/
+dev_scripts/
+
+# Fichiers spécifiques au projet
+generate_secret_key.py
+build-tailwind.bat
+test_*.html
+
+# Fichiers de configuration système
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

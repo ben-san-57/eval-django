@@ -1,0 +1,197 @@
+# ==============================================================================
+# DOCKER-COMPOSE.YML - Le Mixologue Augmenté
+# Configuration par défaut - Pointe vers le développement
+# ==============================================================================
+
+# Ce fichier utilise la configuration de développement par défaut
+# Pour d'autres environnements, utilisez :
+#   - Développement avancé: docker-compose -f docker-compose.dev.yml up
+#   - Production:           docker-compose -f docker-compose.prod.yml up
+
+services:
+  # Base de données PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: cocktailaiser_postgres
+    environment:
+      POSTGRES_DB: cocktailaiser_dev
+      POSTGRES_USER: cocktailaiser_user
+      POSTGRES_PASSWORD: cocktailaiser_password_dev
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cocktailaiser_user -d cocktailaiser_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - cocktailaiser-network
+
+  # Application Django principal
+  web:
+    build: .
+    container_name: cocktailaiser_web
+    ports:
+      - "8000:8000"
+    environment:
+      # Django
+      - DEBUG=True
+      - SECRET_KEY=docker-dev-secret-key-change-in-production
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,web
+      
+      # Base de données
+      - DATABASE_ENGINE=django.db.backends.postgresql
+      - DATABASE_NAME=cocktailaiser_dev
+      - DATABASE_USER=cocktailaiser_user
+      - DATABASE_PASSWORD=cocktailaiser_password_dev
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      
+      # IA Services
+      - AI_SERVICE_TYPE=ollama
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.1
+      
+      # Mistral (optionnel)
+      - MISTRAL_API_KEY=your_mistral_api_key_here
+      - MISTRAL_MODEL=mistral-large-latest
+      - MISTRAL_BASE_URL=https://api.mistral.ai/v1
+      
+      # Stability AI (optionnel)
+      - STABILITY_AI_API_KEY=your_stability_api_key_here
+      - STABILITY_AI_ENABLED=false
+      - STABILITY_AI_MODEL=sdxl-1-0
+      - STABILITY_AI_BASE_URL=https://api.stability.ai
+      - STABILITY_AI_COST_MODE=economic
+      
+      # Logs
+      - LOG_LEVEL=INFO
+      - COCKTAILS_LOG_LEVEL=DEBUG
+      
+      # Security
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - CSRF_TRUSTED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000
+      
+      # JWT
+      - JWT_ACCESS_TOKEN_MINUTES=15
+      - JWT_REFRESH_TOKEN_HOURS=2
+      
+      # Sessions
+      - SESSION_COOKIE_AGE=1800
+      - SESSION_EXPIRE_AT_BROWSER_CLOSE=True
+      - SESSION_SAVE_EVERY_REQUEST=True
+      - SESSION_COOKIE_HTTPONLY=True
+      
+    volumes:
+      - .:/app
+      - media_data:/app/media
+      - static_data:/app/static
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Attente de la base de données...' &&
+        python manage.py wait_for_db &&
+        echo 'Migration de la base de données...' &&
+        python manage.py migrate &&
+        echo 'Création du superutilisateur si nécessaire...' &&
+        python manage.py shell -c 'from django.contrib.auth.models import User; User.objects.filter(username=\"admin\").exists() or User.objects.create_superuser(\"admin\", \"admin@localhost\", \"admin123\")' &&
+        echo 'Démarrage du serveur de développement...' &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+    restart: unless-stopped
+    networks:
+      - cocktailaiser-network
+
+  # Ollama pour IA locale
+  ollama:
+    image: ollama/ollama:latest
+    container_name: cocktailaiser_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    command: >
+      sh -c "
+        ollama serve &
+        sleep 10 &&
+        ollama pull llama3.1 &&
+        wait
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - cocktailaiser-network
+
+  # Redis pour cache (optionnel)
+  redis:
+    image: redis:7-alpine
+    container_name: cocktailaiser_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - cocktailaiser-network
+
+  # Nginx reverse proxy (pour production)
+  nginx:
+    image: nginx:alpine
+    container_name: cocktailaiser_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - static_data:/app/static
+      - media_data:/app/media
+      - ./docker/ssl:/etc/ssl/certs
+    depends_on:
+      - web
+    restart: unless-stopped
+    networks:
+      - cocktailaiser-network
+    profiles:
+      - production
+
+# Volumes persistants
+volumes:
+  postgres_data:
+    name: cocktailaiser_postgres_data
+  ollama_data:
+    name: cocktailaiser_ollama_data
+  redis_data:
+    name: cocktailaiser_redis_data
+  media_data:
+    name: cocktailaiser_media_data
+  static_data:
+    name: cocktailaiser_static_data
+
+# Réseau interne
+networks:
+  cocktailaiser-network:
+    name: cocktailaiser-network
+    driver: bridge

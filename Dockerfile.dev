@@ -1,0 +1,64 @@
+# ==============================================================================
+# DOCKERFILE.DEV - Le Mixologue Augmenté
+# Image Docker optimisée pour le développement avec hot reload
+# ==============================================================================
+
+FROM python:3.11-slim
+
+# Métadonnées
+LABEL maintainer="Le Mixologue Augmenté Dev Team"
+LABEL version="1.0.0"
+LABEL description="Django application for AI-powered cocktail recommendations - Development"
+
+# Variables d'environnement
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBUG=True
+
+# Répertoire de travail
+WORKDIR /app
+
+# Installation des dépendances système
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    libpq-dev \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installation des dépendances Python
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Installation d'outils de développement
+RUN pip install --no-cache-dir \
+    django-debug-toolbar \
+    django-extensions \
+    ipython \
+    jupyter \
+    black \
+    flake8 \
+    pytest \
+    pytest-django
+
+# Copie du code source
+COPY . .
+
+# Création des répertoires nécessaires
+RUN mkdir -p /app/logs /app/media /app/static
+
+# Permissions pour les fichiers
+RUN chmod +x /app/manage.py
+
+# Port d'exposition
+EXPOSE 8000
+
+# Health check pour développement
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/ || exit 1
+
+# Commande par défaut (sera surchargée par docker-compose)
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

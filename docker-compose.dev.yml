@@ -1,0 +1,132 @@
+# ==============================================================================
+# DOCKER-COMPOSE.DEV.YML - Le Mixologue Augmenté 
+# Configuration optimisée pour le développement local
+# ==============================================================================
+
+services:
+  # Base de données PostgreSQL développement
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: cocktailaiser_postgres_dev
+    environment:
+      POSTGRES_DB: cocktailaiser_dev
+      POSTGRES_USER: cocktailaiser_dev_user
+      POSTGRES_PASSWORD: dev_password_123
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cocktailaiser_dev_user -d cocktailaiser_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cocktailaiser-dev-network
+
+  # Application Django développement avec hot reload
+  web-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: cocktailaiser_web_dev
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgresql://cocktailaiser_dev_user:dev_password_123@postgres-dev:5432/cocktailaiser_dev
+      - DJANGO_SETTINGS_MODULE=cocktailaiser.settings
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/__pycache__
+      - /app/venv
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo '🔄 Mode développement - Hot reload activé' &&
+        python manage.py migrate &&
+        python manage.py collectstatic --noinput &&
+        echo '🚀 Démarrage du serveur de développement...' &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+    networks:
+      - cocktailaiser-dev-network
+
+  # Ollama développement (optionnel)
+  ollama-dev:
+    image: ollama/ollama:latest
+    container_name: cocktailaiser_ollama_dev
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_dev_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    command: >
+      sh -c "
+        ollama serve &
+        echo '⏳ Attente du démarrage d Ollama...' &&
+        sleep 30 &&
+        echo '📥 Téléchargement du modèle llama3.1...' &&
+        ollama pull llama3.1 &&
+        echo '✅ Ollama prêt!' &&
+        wait
+      "
+    profiles:
+      - ollama
+    networks:
+      - cocktailaiser-dev-network
+
+  # Redis développement
+  redis-dev:
+    image: redis:7-alpine
+    container_name: cocktailaiser_redis_dev
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - cocktailaiser-dev-network
+
+  # MailHog pour tester les emails en développement
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: cocktailaiser_mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - cocktailaiser-dev-network
+
+  # Adminer pour administration base de données
+  adminer:
+    image: adminer:latest
+    container_name: cocktailaiser_adminer
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres-dev
+    depends_on:
+      - postgres-dev
+    networks:
+      - cocktailaiser-dev-network
+
+# Volumes développement
+volumes:
+  postgres_dev_data:
+    name: cocktailaiser_postgres_dev_data
+  ollama_dev_data:
+    name: cocktailaiser_ollama_dev_data
+  redis_dev_data:
+    name: cocktailaiser_redis_dev_data
+
+# Réseau développement
+networks:
+  cocktailaiser-dev-network:
+    name: cocktailaiser-dev-network
+    driver: bridge

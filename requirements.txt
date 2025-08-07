@@ -1,0 +1,39 @@
+# ==============================================================================
+# REQUIREMENTS.TXT - Le Mixologue Augmenté
+# ==============================================================================
+# Django et dépendances principales
+Django==5.2.4
+python-dotenv==1.0.1
+Pillow==10.4.0
+
+# Django REST Framework et JWT
+djangorestframework==3.15.2
+djangorestframework-simplejwt==5.3.0
+
+# CORS pour les APIs
+django-cors-headers==4.4.0
+
+# Base de données PostgreSQL pour production
+psycopg2-binary==2.9.9
+
+# Requests pour les APIs externes
+requests==2.32.3
+
+# Pydantic pour validation des données
+pydantic==2.10.4
+
+# LangChain et Ollama pour IA
+langchain-ollama==0.2.0
+langchain-core==0.3.28
+langgraph==0.2.78
+
+# Production et deployment
+gunicorn==23.0.0
+whitenoise==6.8.2
+
+# Outils de développement optionnels (pour conteneur dev)
+# pytest==8.3.4
+# pytest-django==4.9.0
+# black==24.10.0
+# flake8==7.1.1
+# isort==5.13.2
