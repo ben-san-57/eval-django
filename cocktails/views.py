@@ -44,23 +44,8 @@ def generate_cocktail_view(request):
                 # Obtenir le service IA selon le choix de l'utilisateur
                 ai_service = AIServiceFactory.get_service(ai_model)
                 
-                # Générer le cocktail avec l'IA
-                cocktail_data = ai_service.generate_cocktail_recipe(user_prompt, context)
-                
-                # Générer l'image si demandé
-                image_url = ''
-                if generate_image:
-                    try:
-                        # Utiliser le service Stability AI pour générer l'image
-                        from .services.ollama_service import OllamaService
-                        ollama_service = OllamaService()
-                        image_url = ollama_service.generate_cocktail_image(
-                            cocktail_data.get('image_prompt', cocktail_data['name'])
-                        )
-                        logger.info(f"Image générée avec succès pour le cocktail {cocktail_data['name']}")
-                    except Exception as e:
-                        logger.error(f"Erreur lors de la génération d'image: {e}")
-                        # Continue sans image en cas d'erreur
+                # Générer le cocktail avec l'IA, en passant le choix de génération d'image
+                cocktail_data = ai_service.generate_cocktail_recipe(user_prompt, context, generate_image)
                 
                 # Créer le cocktail en base
                 cocktail = CocktailRecipe.objects.create(
@@ -71,7 +56,7 @@ def generate_cocktail_view(request):
                     ingredients=cocktail_data['ingredients'],
                     music_ambiance=cocktail_data.get('music_ambiance', ''),
                     image_prompt=cocktail_data.get('image_prompt', ''),
-                    image_url=image_url or cocktail_data.get('image_url', ''),
+                    image_url=cocktail_data.get('image_url', ''),
                     difficulty_level=cocktail_data.get('difficulty_level', 'medium'),
                     alcohol_content=cocktail_data.get('alcohol_content', 'medium'),
                     preparation_time=cocktail_data.get('preparation_time', 5)

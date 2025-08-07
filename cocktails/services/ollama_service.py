@@ -608,26 +608,26 @@ class UnifiedCocktailService(BaseAIService):
         self.cocktail_graph = graph.compile()
         logger.info("🔄 Workflow LangGraph de génération de cocktails initialisé")
     
-    def generate_cocktail(self, user_prompt: str, context: str = "") -> Dict[str, Any]:
+    def generate_cocktail(self, user_prompt: str, context: str = "", generate_image: bool = True) -> Dict[str, Any]:
         """Génère un cocktail en utilisant le workflow LangGraph ou une approche directe"""
         service_name = "Mistral" if self.ai_service_type == "mistral" else "Ollama"
-        logger.info(f"🚀 Génération IA {service_name} pour: '{user_prompt}'")
+        logger.info(f"🚀 Génération IA {service_name} pour: '{user_prompt}' (image: {generate_image})")
         
         try:
             if self.ai_service_type == "mistral":
                 # Pour Mistral, utilise une approche directe sans LangGraph
-                return self._generate_cocktail_direct_mistral(user_prompt, context)
+                return self._generate_cocktail_direct_mistral(user_prompt, context, generate_image)
             else:
                 # Pour Ollama, utilise le workflow LangGraph complet
-                return self._generate_cocktail_workflow(user_prompt, context)
+                return self._generate_cocktail_workflow(user_prompt, context, generate_image)
                 
         except Exception as e:
             logger.error(f"❌ Erreur génération cocktail {service_name}: {e}")
             raise Exception(f"Impossible de générer le cocktail: {e}")
     
-    def _generate_cocktail_workflow(self, user_prompt: str, context: str = "") -> Dict[str, Any]:
+    def _generate_cocktail_workflow(self, user_prompt: str, context: str = "", generate_image: bool = True) -> Dict[str, Any]:
         """Génération avec workflow LangGraph (pour Ollama)"""
-        logger.info(f"🦙 Génération avec workflow LangGraph")
+        logger.info(f"🦙 Génération avec workflow LangGraph (image: {generate_image})")
         
         # État initial
         initial_state = CocktailState(
@@ -642,12 +642,16 @@ class UnifiedCocktailService(BaseAIService):
         cocktail_data = final_state["final_cocktail"]
         cocktail_data['image_prompt'] = final_state["image_prompt"]
         
-        # Générer l'image avec Stability AI ou placeholder
-        image_url = self.stability_service.generate_image(
-            final_state["image_prompt"], 
-            cocktail_data['name']
-        )
-        cocktail_data['image_url'] = image_url
+        # Générer l'image avec Stability AI ou placeholder seulement si demandé
+        if generate_image:
+            image_url = self.stability_service.generate_image(
+                final_state["image_prompt"], 
+                cocktail_data['name']
+            )
+            cocktail_data['image_url'] = image_url
+        else:
+            # Pas d'image demandée
+            cocktail_data['image_url'] = ''
         
         cocktail_data['ai_service'] = self.ai_service_type
         cocktail_data['ai_model_used'] = f"{self.ai_service_type}-workflow"
@@ -655,9 +659,9 @@ class UnifiedCocktailService(BaseAIService):
         logger.info(f"✅ Cocktail généré via workflow: {cocktail_data['name']}")
         return cocktail_data
     
-    def _generate_cocktail_direct_mistral(self, user_prompt: str, context: str = "") -> Dict[str, Any]:
+    def _generate_cocktail_direct_mistral(self, user_prompt: str, context: str = "", generate_image: bool = True) -> Dict[str, Any]:
         """Génération directe pour Mistral (même qualité, sans LangGraph)"""
-        logger.info(f"🌟 Génération directe Mistral")
+        logger.info(f"🌟 Génération directe Mistral (image: {generate_image})")
         
         # Construire un prompt complet qui simule le workflow
         full_prompt = f"""
@@ -701,12 +705,16 @@ IMPORTANT:
             # Générer un prompt d'image basique
             image_prompt = f"Beautiful {cocktail_data['name']} cocktail in elegant glass"
             
-            # Générer l'image avec Stability AI ou placeholder
-            image_url = self.stability_service.generate_image(image_prompt, cocktail_data['name'])
+            # Générer l'image avec Stability AI ou placeholder seulement si demandé
+            if generate_image:
+                image_url = self.stability_service.generate_image(image_prompt, cocktail_data['name'])
+                cocktail_data['image_url'] = image_url
+            else:
+                # Pas d'image demandée
+                cocktail_data['image_url'] = ''
             
             # Ajouter les métadonnées
             cocktail_data['image_prompt'] = image_prompt
-            cocktail_data['image_url'] = image_url
             cocktail_data['ai_service'] = 'mistral'
             cocktail_data['ai_model_used'] = 'mistral-direct'
             cocktail_data['created_at'] = datetime.now().isoformat()
@@ -780,9 +788,9 @@ IMPORTANT:
                 'music_ambiance': 'Jazz décontracté'
             }
     
-    def generate_cocktail_recipe(self, user_prompt: str, context: str = "") -> Dict[str, Any]:
+    def generate_cocktail_recipe(self, user_prompt: str, context: str = "", generate_image: bool = True) -> Dict[str, Any]:
         """Alias pour compatibilité"""
-        return self.generate_cocktail(user_prompt, context)
+        return self.generate_cocktail(user_prompt, context, generate_image)
     
     # ============================================================================
     # ÉTAPES DU WORKFLOW LANGGRAPH

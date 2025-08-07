@@ -16,7 +16,7 @@ class BaseAIService(ABC):
         self.service_name = self.__class__.__name__
     
     @abstractmethod
-    def generate_cocktail(self, user_prompt: str, context: str = "") -> Dict[str, Any]:
+    def generate_cocktail(self, user_prompt: str, context: str = "", generate_image: bool = True) -> Dict[str, Any]:
         """
         « Propose-moi une fiche cocktail créative basé sur le prompt utilisateur. 
         Le nom du cocktail doit obligatoirement être festif, 
