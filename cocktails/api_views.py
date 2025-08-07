@@ -105,6 +105,13 @@ class GenerationRequestViewSet(viewsets.ModelViewSet):
 def generate_cocktail_api(request):
     """API sécurisée pour générer un cocktail avec IA"""
     try:
+        # Vérifier si le service AI est disponible
+        if ai_service is None:
+            return Response(
+                {'error': 'Le service de génération d\'IA n\'est pas disponible actuellement'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+            
         user_prompt = request.data.get('prompt')
         context = request.data.get('context', '')
         

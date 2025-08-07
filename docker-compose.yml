@@ -53,7 +53,7 @@ services:
       - DATABASE_PORT=5432
       
       # IA Services
-      - AI_SERVICE_TYPE=ollama
+      - AI_SERVICE_TYPE=disabled
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_MODEL=llama3.1
       
@@ -94,12 +94,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      ollama:
-        condition: service_healthy
     command: >
       sh -c "
         echo 'Attente de la base de données...' &&
-        python manage.py wait_for_db &&
+        sleep 10 &&
         echo 'Migration de la base de données...' &&
         python manage.py migrate &&
         echo 'Création du superutilisateur si nécessaire...' &&

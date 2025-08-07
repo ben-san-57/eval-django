@@ -25,7 +25,7 @@ pydantic==2.10.4
 # LangChain et Ollama pour IA
 langchain-ollama==0.2.0
 langchain-core==0.3.28
-langgraph==0.2.78
+langgraph==0.2.76
 
 # Production et deployment
 gunicorn==23.0.0

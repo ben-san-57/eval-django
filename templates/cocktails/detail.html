@@ -14,11 +14,14 @@
         </a>
         
         <div class="flex space-x-3">
-            <button class="bg-cocktail-secondary hover:bg-yellow-600 text-white px-4 py-2 rounded-lg flex items-center">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button id="favorite-btn" 
+                    data-cocktail-id="{{ cocktail.pk }}" 
+                    data-is-favorite="{{ cocktail.is_favorite|yesno:'true,false' }}"
+                    class="bg-cocktail-secondary hover:bg-yellow-600 text-white px-4 py-2 rounded-lg flex items-center transition-all duration-200 hover:scale-105">
+                <svg class="w-4 h-4 mr-2" fill="{% if cocktail.is_favorite %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                 </svg>
-                {% if cocktail.is_favorite %}Retirer des favoris{% else %}Ajouter aux favoris{% endif %}
+                <span id="favorite-text">{% if cocktail.is_favorite %}Retirer des favoris{% else %}Ajouter aux favoris{% endif %}</span>
             </button>
             
             <a href="{% url 'cocktails:generate' %}" class="bg-cocktail-primary hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center">
@@ -233,6 +236,89 @@ document.addEventListener('DOMContentLoaded', function() {
             el.style.transform = 'translateY(0)';
         }, index * 100);
     });
+
+    // Gestion du bouton favoris
+    const favoriteBtn = document.getElementById('favorite-btn');
+    const favoriteText = document.getElementById('favorite-text');
+    const heartIcon = favoriteBtn.querySelector('svg');
+
+    if (favoriteBtn) {
+        favoriteBtn.addEventListener('click', async function() {
+            const cocktailId = this.dataset.cocktailId;
+            const isFavorite = this.dataset.isFavorite === 'true';
+            
+            // Désactiver le bouton pendant la requête
+            favoriteBtn.disabled = true;
+            favoriteBtn.style.opacity = '0.7';
+
+            try {
+                const response = await fetch(`{% url 'cocktails:toggle_favorite' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', cocktailId), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Mettre à jour l'état du bouton
+                    this.dataset.isFavorite = data.is_favorite;
+                    
+                    // Mettre à jour le texte
+                    favoriteText.textContent = data.is_favorite ? 'Retirer des favoris' : 'Ajouter aux favoris';
+                    
+                    // Mettre à jour l'icône (rempli ou vide)
+                    heartIcon.setAttribute('fill', data.is_favorite ? 'currentColor' : 'none');
+                    
+                    // Animation du bouton
+                    favoriteBtn.classList.add('scale-110');
+                    setTimeout(() => {
+                        favoriteBtn.classList.remove('scale-110');
+                    }, 200);
+                    
+                    // Message de succès (optionnel - Toast notification)
+                    const message = data.is_favorite ? 'Ajouté aux favoris ❤️' : 'Retiré des favoris 💔';
+                    showToast(message);
+                    
+                } else {
+                    console.error('Erreur lors de la mise à jour des favoris');
+                    showToast('Erreur lors de la mise à jour', 'error');
+                }
+            } catch (error) {
+                console.error('Erreur réseau:', error);
+                showToast('Erreur de connexion', 'error');
+            } finally {
+                // Réactiver le bouton
+                favoriteBtn.disabled = false;
+                favoriteBtn.style.opacity = '1';
+            }
+        });
+    }
+
+    // Fonction simple pour afficher des messages toast
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-white transition-all duration-300 transform translate-x-full ${
+            type === 'error' ? 'bg-red-500' : 'bg-green-500'
+        }`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        // Animation d'entrée
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+        }, 100);
+        
+        // Suppression automatique
+        setTimeout(() => {
+            toast.style.transform = 'translateX(full)';
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 3000);
+    }
 });
 </script>
 {% endblock %}

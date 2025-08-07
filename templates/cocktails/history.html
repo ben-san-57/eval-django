@@ -141,7 +141,9 @@
                 <!-- Header de la carte -->
                 <div class="flex justify-between items-start mb-3">
                     <h3 class="text-xl font-bold text-gray-900 line-clamp-2">{{ cocktail.name }}</h3>
-                    <button class="text-gray-400 hover:text-red-500 transition-colors">
+                    <button class="favorite-btn text-gray-400 hover:text-red-500 transition-colors" 
+                            data-cocktail-id="{{ cocktail.pk }}" 
+                            data-is-favorite="{{ cocktail.is_favorite|yesno:'true,false' }}">
                         {% if cocktail.is_favorite %}
                             <svg class="w-5 h-5 fill-current text-red-500" viewBox="0 0 24 24">
                                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -283,6 +285,114 @@ document.addEventListener('DOMContentLoaded', function() {
             card.style.transform = 'translateY(0)';
         }, index * 100);
     });
+
+    // Gestion des boutons favoris
+    const favoriteButtons = document.querySelectorAll('.favorite-btn');
+    favoriteButtons.forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const cocktailId = this.dataset.cocktailId;
+            const isFavorite = this.dataset.isFavorite === 'true';
+            const heartIcon = this.querySelector('svg');
+            
+            // Désactiver temporairement le bouton
+            this.disabled = true;
+            this.style.opacity = '0.7';
+
+            try {
+                const response = await fetch(`{% url 'cocktails:toggle_favorite' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', cocktailId), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Mettre à jour l'état du bouton
+                    this.dataset.isFavorite = data.is_favorite;
+                    
+                    // Mettre à jour l'icône
+                    if (data.is_favorite) {
+                        // Cœur plein (favori)
+                        heartIcon.innerHTML = '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>';
+                        heartIcon.setAttribute('class', 'w-5 h-5 fill-current text-red-500');
+                        heartIcon.setAttribute('fill', 'currentColor');
+                        heartIcon.removeAttribute('stroke');
+                    } else {
+                        // Cœur vide (pas favori)
+                        heartIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>';
+                        heartIcon.setAttribute('class', 'w-5 h-5');
+                        heartIcon.setAttribute('fill', 'none');
+                        heartIcon.setAttribute('stroke', 'currentColor');
+                    }
+                    
+                    // Animation du bouton
+                    this.classList.add('scale-125');
+                    setTimeout(() => {
+                        this.classList.remove('scale-125');
+                    }, 200);
+                    
+                    // Toast notification
+                    const message = data.is_favorite ? 'Ajouté aux favoris ❤️' : 'Retiré des favoris 💔';
+                    showToast(message);
+                    
+                    // Si on est sur la page des favoris et que le cocktail n'est plus favori,
+                    // on peut le faire disparaître avec animation
+                    if (!data.is_favorite && window.location.search.includes('filter=favorites')) {
+                        const card = this.closest('.cocktail-card');
+                        card.style.transition = 'all 0.5s ease';
+                        card.style.opacity = '0';
+                        card.style.transform = 'scale(0.8)';
+                        setTimeout(() => {
+                            // Recharger la page pour mettre à jour le compteur
+                            window.location.reload();
+                        }, 500);
+                    }
+                    
+                } else {
+                    console.error('Erreur lors de la mise à jour des favoris');
+                    showToast('Erreur lors de la mise à jour', 'error');
+                }
+            } catch (error) {
+                console.error('Erreur réseau:', error);
+                showToast('Erreur de connexion', 'error');
+            } finally {
+                // Réactiver le bouton
+                this.disabled = false;
+                this.style.opacity = '1';
+            }
+        });
+    });
+
+    // Fonction pour afficher des messages toast
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-white transition-all duration-300 transform translate-x-full ${
+            type === 'error' ? 'bg-red-500' : 'bg-green-500'
+        }`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        // Animation d'entrée
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+        }, 100);
+        
+        // Suppression automatique
+        setTimeout(() => {
+            toast.style.transform = 'translateX(full)';
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    document.body.removeChild(toast);
+                }
+            }, 300);
+        }, 3000);
+    }
 });
 
 // Animation CSS
@@ -305,6 +415,14 @@ style.textContent = `
         -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
+    }
+
+    .favorite-btn {
+        transition: all 0.2s ease;
+    }
+
+    .favorite-btn:hover {
+        transform: scale(1.1);
     }
 `;
 document.head.appendChild(style);

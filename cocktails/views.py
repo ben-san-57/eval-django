@@ -44,6 +44,11 @@ def generate_cocktail_view(request):
                 # Obtenir le service IA selon le choix de l'utilisateur
                 ai_service = AIServiceFactory.get_service(ai_model)
                 
+                # Vérifier si le service AI est disponible
+                if ai_service is None:
+                    messages.error(request, "Le service de génération d'IA n'est pas disponible actuellement. Veuillez réessayer plus tard.")
+                    return render(request, 'cocktails/generate.html', {'form': form})
+                
                 # Générer le cocktail avec l'IA, en passant le choix de génération d'image
                 cocktail_data = ai_service.generate_cocktail_recipe(user_prompt, context, generate_image)
                 

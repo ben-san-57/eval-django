@@ -1,0 +1,3 @@
+# Répertoire pour les certificats SSL
+# Pour le développement local, ce répertoire peut rester vide
+# En production, placez ici vos certificats SSL

@@ -14,7 +14,10 @@ class AIServiceFactory:
         if service_type is None:
             service_type = getattr(settings, 'AI_SERVICE_TYPE', 'ollama')
         
-        if service_type == 'ollama':
+        if service_type == 'disabled':
+            logger.info("Service IA désactivé")
+            return None
+        elif service_type == 'ollama':
             return OllamaService()
         elif service_type == 'mistral':
             # Utilise le même workflow sophistiqué que Ollama mais avec Mistral
@@ -29,4 +32,8 @@ class AIServiceFactory:
         return getattr(settings, 'AVAILABLE_AI_MODELS', {})
 
 # Instance globale pour faciliter l'utilisation (par défaut)
-ai_service = AIServiceFactory.get_service()
+try:
+    ai_service = AIServiceFactory.get_service()
+except Exception as e:
+    logger.warning(f"Impossible d'initialiser le service IA: {e}")
+    ai_service = None
